@@ -8,11 +8,38 @@
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
  
-    <title>Hello, world!</title>
+    <style>
+        body{
+            background-color: cadetblue;
+        }
+    </style>
+
+    <title>Quiz App!</title>
   </head>
   <body>
-    <h1>Hello, world!</h1>
+    <div class="coontainer-fluid">
 
+      <div class="row text-center m-3">
+          <h1>Quiz App</h1>
+      </div>
+
+      <div class="row align-items-center justify-content-center m-3">
+        <div class="col-2">
+          <div class="input-group">
+            <input type="text" class="form-control text-nowrap" placeholder="Lobby Code"/>
+            <button type="submit" class="btn btn-primary text-nowrap">Join</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="row align-items-center justify-content-center">
+        <div class="col-1">
+            <button type="submit" class="btn btn-primary form-control text-nowrap"onclick="location.href = 'lobby.html';">Create</button>
+        </div>
+      </div>
+
+
+    </div>
 
   </body>
 </html>
