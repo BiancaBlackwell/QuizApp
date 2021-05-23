@@ -1,9 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<title>Flask_Chat_App</title>
+<title>Quiz Lobby</title>
 </head>
 <body>
+
+<h1 style="text-align:center">Main Lobby</h1>
+
+<h2 style="text-align:center">Players</h2>
+
+<h4 style="text-align:center">Player 1</h4>
+<h4 style="text-align:center">Player 2</h4>
+<h4 style="text-align:center">Player 3</h4>
+
+
+<p>{{ userid }} </p>
 
 <h3 style='color: #ccc;font-size: 30px;'>No message yet..</h3>
 <div class="message_holder"></div>
@@ -43,6 +54,19 @@
     }
   })
 </script>
+<script>
+// Check if the sessionStorage object exists
+if(sessionStorage) {
+    // Store data
+    sessionStorage.setItem('uid', userid)    
+    // Retrieve data
+    alert("Hi, " + sessionStorage.getItem('uid'));
+} else {
+    alert("Sorry, your browser do not support session storage.");
+}
+</script>
+
+
 
 </body>
 </html>
