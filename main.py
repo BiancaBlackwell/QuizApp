@@ -7,10 +7,22 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'vnkdjnfjknfl1232#'
 socketio = SocketIO(app)
 
+
+
 @app.route('/')
+def home():
+    return render_template('home.html')
+
+@app.route('/lobby')
 def sessions():
     userid = uuid.uuid1()
     return render_template('session.html', userid=userid)
+
+@app.route('/trivia')
+def game():
+    return render_template('trivia.html')
+
+
 
 def messageReceived(methods=['GET', 'POST']):
     print('message was received!!!')

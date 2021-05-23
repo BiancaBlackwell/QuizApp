@@ -17,3 +17,22 @@ let app = http.createServer(
 ).listen(port);
 
 console.log('The Server is running');
+
+const { server } = require("socket.io");
+const io = new http.Server(app);
+
+io.on("connection", (socket) => {
+
+    function serverLog(...messages){
+        io.emit('log', ["**** Message from the server:\n"]);
+        messages.forEach((item) => {
+            io.emit('log',['****\t'+item]);
+        })
+    }
+
+    serverLog('a page connected to the server: '+socket.id);
+
+    socket.on('disconnect', () => {
+        serverLog('a page disconencted from the server: '+socket.id);
+    })
+});
