@@ -1,55 +1,48 @@
-<!DOCTYPE HTML>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <title>Socket-Test</title>
-    <script src="//code.jquery.com/jquery-1.12.4.min.js"></script>
-    <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
-    <script type="text/javascript" charset="utf-8">
-        $(document).ready(function() {
-
-            namespace = '/test';
-            var socket = io(namespace);
-
-            socket.on('connect', function() {
-                socket.emit('my_event', {data: 'connected to the SocketServer...'});
-            });
-
-            socket.on('my_response', function(msg, cb) {
-                $('#log').append('<br>' + $('<div/>').text('logs #' + msg.count + ': ' + msg.data).html());
-                if (cb)
-                    cb();
-            });
-            $('form#emit').submit(function(event) {
-                socket.emit('my_event', {data: $('#emit_data').val()});
-                return false;
-            });
-            $('form#broadcast').submit(function(event) {
-                socket.emit('my_broadcast_event', {data: $('#broadcast_data').val()});
-                return false;
-            });
-            $('form#disconnect').submit(function(event) {
-                socket.emit('disconnect_request');
-                return false;
-            });
-        });
-    </script>
+<title>Flask_Chat_App</title>
 </head>
-<body style="background-color:white;">
+<body>
 
-    <h1 style="background-color:white;">Socket</h1>
-    <form id="emit" method="POST" action='#'>
-        <input type="text" name="emit_data" id="emit_data" placeholder="Message">
-        <input type="submit" value="Send Message">
-    </form>
-    <form id="broadcast" method="POST" action='#'>
-        <input type="text" name="broadcast_data" id="broadcast_data" placeholder="Message">
-        <input type="submit" value="Send Broadcast Message">
-    </form>
+<h3 style='color: #ccc;font-size: 30px;'>No message yet..</h3>
+<div class="message_holder"></div>
 
-    <form id="disconnect" method="POST" action="#">
-        <input type="submit" value="Disconnect Server">
-    </form>
-    <h2 style="background-color:white;">Logs</h2>
-    <div id="log" ></div>
+<form action="" method="POST">
+  <input type="text" class="username" placeholder="User Name"/>
+  <input type="text" class="message" placeholder="Messages"/>
+  <input type="submit"/>
+</form>
+
+<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.7.3/socket.io.min.js"></script>
+<script type="text/javascript">
+  var socket = io.connect('http://' + document.domain + ':' + location.port);
+
+  socket.on( 'connect', function() {
+    socket.emit( 'my event', {
+      data: 'User Connected'
+    } )
+    var form = $( 'form' ).on( 'submit', function( e ) {
+      e.preventDefault()
+      let user_name = $( 'input.username' ).val()
+      let user_input = $( 'input.message' ).val()
+      socket.emit( 'my event', {
+        user_name : user_name,
+        message : user_input
+      } )
+      $( 'input.message' ).val( '' ).focus()
+    } )
+  } )
+  socket.on( 'my response', function( msg ) {
+    console.log( msg )
+    if( typeof msg.user_name !== 'undefined' ) {
+      $( 'h3' ).remove()
+      $( 'div.message_holder' ).append( '<div><b style="color: #000">'+msg.user_name+'</b> '+msg.message+'</div>' )
+    }
+  })
+</script>
+
 </body>
 </html>
