@@ -48,17 +48,43 @@ def getUserid():
 	return userid
 
 #Add user to room or generate room
-@app.route('/backend/addUser')
-def addUser(userid, roomid):
-	#lookup on rooms table, roomid
-	#if exists, update room on users table, update playercount on rooms table
-	#if doesn't exist, create rooms on user table, create room and playercount on rooms table
+@app.route('/backend/joinRoom')
+def joinRoom(userid, roomid):
+	if not verifyUser:
+		return False
+	if not verifyRoom:
+		return False
+	cur = get_db().cursor()
+	query = f'UPDATE users SET roomid = {roomid} WHERE userid = {userid};'
+	cur.execute(query)
+	return True
+
+@app.route('/backend/createRoom')
+def createRoom(userid):
 
 
 def getFromComplete(id, cur):
     for row in cur.execute('SELECT * FROM complete WHERE id = ' + str(id)):
         cur.close()
         return str(row)
+
+def verifyUser(userid):
+	cur = get_db().cursor()
+	query = f'SELECT COUNT(userid) FROM users WHERE userid = {userid};'
+	count = cur.execute(query)
+	if count > 0:
+		return True
+	else
+		return False
+
+def verifyRoom(roomid):
+	cur = get_db().cursor()
+	query = f'SELECT COUNT(roomid) FROM rooms WHERE roomid = {roomid};'
+	count = cur.execute(query)
+	if count > 0:
+		return True
+	else
+		return False 
 
 if __name__ == '__main__':
 	app.run(debug=True)
