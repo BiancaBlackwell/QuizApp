@@ -14,13 +14,17 @@ def home():
     return render_template('home.html')
 
 @app.route('/lobby')
-def sessions():
-    userid = uuid.uuid1()
-    return render_template('session.html', userid=userid)
+def lobby():
+    return render_template('lobby.html')
 
 @app.route('/trivia')
-def game():
+def trivia():
     return render_template('trivia.html')
+
+@app.route('/victory')
+def  victory():
+	return render_template('victory.html')
+
 
 def messageReceived(methods=['GET', 'POST']):
     print('message was received!!!')
