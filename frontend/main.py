@@ -22,8 +22,6 @@ def sessions():
 def game():
     return render_template('trivia.html')
 
-
-
 def messageReceived(methods=['GET', 'POST']):
     print('message was received!!!')
 
