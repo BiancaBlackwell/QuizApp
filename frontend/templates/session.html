@@ -1,66 +1,107 @@
 <!DOCTYPE html>
 <html lang="en">
 
-<style>
-    body{
-        background-image: url(/static/assets/images/main_bg.png);
-        background-attachment: fixed;
-        background-size: cover;
-    }
-    h1{
-        color: #212121;
-        text-align:center;
-    }
-    h2{
-        color: #212121;
-        text-align:center;
-    }
-    h3{
-        color: #ccc;
-        font-size: 30px;
-    }
-    h4{
-        color: #212121;
-        text-align:center;
-    }
-    .btn-dark{
-        background-color: #25274d;
-    }
-    .row{
-        margin: 0px;
-    }
-    .outer{
-        margin: 0px;
-    }
-</style>
-
 <head>
     <title>Quiz Lobby</title>
+    
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
+    
+    <style>
+        body{
+            background-image: url(/static/assets/images/main_bg.png);
+            background-attachment: fixed;
+            background-size: cover;
+        }
+        .btn-dark{
+            background-color: #25274d;
+            font-size: 15pt;
+            color:#e8f9fc;
+      
+        }
+        .col-2{
+            background-color: #065464;
+        }
+        .message_holder{
+            background-color: #85c3cf;
+            color: #212121;
+            padding: 2%;
+            height: 50vh;
+            overflow-y:auto;
+        }
+        .player{
+            background-color: #85c3cf;
+            padding:2%;
+            color: #212121;
+        }
+        .card-title{
+            font-size: 20pt;
+        }
+    </style>
+    
 </head>
+
 <body>
     
-    <h1>Main Lobby</h1>
-    
-    <h2>Players</h2>
-    
-    <h4>Player 1</h4>
-    <h4>Player 2</h4>
-    <h4>Player 3</h4>
-    
-    
-    <p>{{ userid }} </p>
-    <h3>No message yet..</h3>
-    <div class="message_holder"></div>
-    
-    <form action="" method="POST">
-        <input type="text" class="username" placeholder="User Name"/>
-        <input type="text" class="message" placeholder="Messages"/>
-        <input type="submit"/>
-    </form>
-    
-    <div class="row text-center outer" style="margin: 0px;">
-        <div class="col">
-            <button type="submit" class="btn btn-dark text-nowrap"onclick="location.href = '/trivia';">Start</button>
+    <div class="coontainer-fluid">
+        
+        
+        <div class="row" style="margin: 0px;">
+            
+            <div class="col-2 text-center"style="height: 100vh;">
+                <br/>
+
+                <h3 style="color:#e8f9fc;">Players</h3>
+                
+                <div class="player card mb-2">
+                    <h5 class="card-title mb-0">Abe Abbleton</h5>
+                </div>
+                
+                <div class="player card mb-2">
+                    <h5 class="card-title mb-0">Bob Bobbington</h5>
+                </div>
+                
+                <div class="player card mb-2">
+                    <h5 class="card-title mb-0">Carl Carlton</h5>
+                </div>
+                
+            </div>
+            
+            
+            <div class="col-9">
+                
+                <br/>
+                
+                <h1 class="text-center">Main Lobby</h1>
+                <p class="text-center">{{ userid }} </p>
+                
+                <br/><br/><br/>
+                
+                <div class="col-5 message_holder" style="text-align: left;">
+                    <h3 class="message_placeholder">No message yet..</h3>
+                </div>
+                
+                <br/>
+                
+                <form action="" method="POST">
+                    <input type="text" class="username" placeholder="User Name"/>
+                    <input type="text" class="message" placeholder="Messages"/>
+                    <input type="submit"/>
+                </form>
+                
+                <br/>
+                
+                <div class="col-1 offset-2">
+                    <button type="submit" class="btn btn-dark text-nowrap w-100"onclick="location.href = '/trivia';">Ready</button>
+                </div>
+                
+            </div>  
+            
+            
         </div>
     </div>
     
@@ -70,7 +111,21 @@
     
     
     
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.7.3/socket.io.min.js"></script>
@@ -98,8 +153,9 @@
         socket.on( 'my response', function( msg ) {
             console.log( msg )
             if( typeof msg.user_name !== 'undefined' ) {
-                $( 'h3' ).remove()
-                $( 'div.message_holder' ).append( '<div><b style="color: #000">'+msg.user_name+'</b> '+msg.message+'</div>' )
+                $( 'h3.message_placeholder' ).remove()
+                $( 'div.message_holder' ).append( '<div class="text-wrap text-break"><b style="color: #000">'+msg.user_name+':</b> '+msg.message+'</div>' )
+                $( 'div.message_holder' ).stop().animate({ scrollTop: $( 'div.message_holder' )[0].scrollHeight}, 750);
             }
         })
     </script>
