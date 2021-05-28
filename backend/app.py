@@ -49,12 +49,15 @@ def getQuestionWithCategory(category):
 def createUser():
 	#Generate UserID (Randomly)
 	userid = str(uuid.uuid1())
+	print(userid)
 	#Save it in the users table of the DB
-	cur = get_db().cursor()
+	db = get_db()
+	cur = db.cursor()
 	query = f'INSERT INTO users VALUES ("{userid}", null);'
 	cur.execute(query)
 
 	cur.close()
+	db.commit()
 	return userid
 
 #Add user to room or generate room
@@ -107,6 +110,37 @@ def removeRoom(roomid):
 	db = get_db()
 	cur = db.cursor()
 	query = f'DELETE FROM rooms WHERE roomid = "{roomid}";'
+	cur.execute(query)
+	query = f'DELETE FROM users WHERE roomid = "{roomid}";'
+	cur.execute(query)
+
+	# close cursor and commit change
+	cur.close()
+	db.commit()
+	return "True"
+
+@app.route('/backend/removeUser/<userid>')
+def removeUser(userid):
+
+	#verify the room exists
+	if not verifyUser(userid):
+		return "False"
+
+	#remove room to database
+	db = get_db()
+	cur = db.cursor()
+
+	query = f'SELECT roomid FROM users WHERE userid = "{userid}";'
+	cur.execute(query)
+	roomid = cur.fetchone()[0]
+
+	query = f'DELETE FROM users WHERE userid = "{userid}";'
+	cur.execute(query)
+
+	query = f'UPDATE rooms SET partysize = partysize - 1 WHERE roomid = "{roomid}";'
+	cur.execute(query)
+
+	query = f'DELETE FROM rooms WHERE partysize = 0;'
 	cur.execute(query)
 
 	# close cursor and commit change
