@@ -16,7 +16,7 @@ def home():
 @app.route('/lobby')
 def sessions():
     userid = uuid.uuid1()
-    return render_template('session.html', userid=userid)
+    return render_template('lobby.html', userid=userid)
 
 @app.route('/trivia')
 def game():
