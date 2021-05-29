@@ -31,7 +31,7 @@ function Lobby() {
 
     <div className="coontainer-fluid">
       <div className="row" style={{margin: "0px"}}>
-        <PlayerSidebar></PlayerSidebar>
+        <PlayerSidebar />
 
         <div className="col-9">
 
@@ -192,7 +192,7 @@ function PlayerSidebar(props) {
 
     <h3 style={{ color: "#e8f9fc" }}>Players</h3>
     {
-      props.players.map((player, ind) => {
+      props.players && props.players.map((player, ind) => {
         // we want this component to be able to be used on both the lobby and game screen
         // so we should not expect it to always have a score
         if(player.score){
