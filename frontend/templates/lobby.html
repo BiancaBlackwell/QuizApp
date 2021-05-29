@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Quiz Lobby</title>
+    
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta id="uid" data-name="{{userid}}">
+    
+    <!-- Bootstrap CSS -->
+    <!-- Latest compiled and minified CSS -->
+    <!-- JavaScript Bundle with Popper -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    
+    <style>
+        body{
+            background-image: url(/static/assets/images/main_bg.png);
+            background-attachment: fixed;
+            background-size: cover;
+        }
+        .btn-dark{
+            background-color: #25274d;
+            font-size: 15pt;
+            color:#e8f9fc;           
+        }
+        .btn-dark:hover{
+            background-color: #464866;
+            font-size: 15pt;
+            color:#e8f9fc;
+        }
+        .btn-group .btn-dark:not(:disabled):not(.disabled).active, .btn-group .btn-dark:not(:disabled):not(.disabled):active, .show>.btn.dropdown-toggle {
+            color: #fff;
+            background-color:darkorange;
+            border-color: darkorange;
+        }
+        .btn-dark:focus{
+            background-color: #464866;
+            font-size: 15pt;
+            color:#e8f9fc;
+        }
+        
+        .sidebar{
+            background-color: #065464;
+        }
+        .message_holder{
+            background-color: #85c3cf;
+            color: #212121;
+            padding: 2%;
+            height: 50vh;
+            margin-left: 15px;
+            overflow-y:auto;
+        }
+        .player{
+            background-color: #85c3cf;
+            padding:2%;
+            color: #212121;
+        }
+        .card-title{
+            font-size: 20pt;
+        }
+        .textarea:focus,input[type="text"]:focus{
+            border-color: #25274d;
+            box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset, 0 0 8px #25274d;
+            outline: 0 none;
+        }
+        .form-check-label{
+            font-size: 15pt;
+        }
+    </style>
+    
+</head>
+
+<body>
+    
+    
+    
+    
+    
+    
+    <div class="coontainer-fluid">
+        
+        
+        <div class="row" style="margin: 0px;">
+            
+            <div class="col-2 sidebar text-center"style="height: 100vh;">
+                <br/>
+                
+                <h3 style="color:#e8f9fc;">Players</h3>
+                
+                <div class="player card mb-2">
+                    <h5 class="card-title mb-0">Abe Abbleton</h5>
+                </div>
+                
+                <div class="player card mb-2">
+                    <h5 class="card-title mb-0">Bob Bobbington</h5>
+                </div>
+                
+                <div class="player card mb-2">
+                    <h5 class="card-title mb-0">Carl Carlton</h5>
+                </div>
+                
+            </div>
+            
+            
+            <div class="col-9">
+                
+                <br/>
+                
+                <h1 class="text-center text-middle">Main Lobby</h1>
+                <p class="uid text-center" id="uid">{{ userid }} </p>
+                
+                <br/><br/><br/>
+                
+                <div class="row">
+                    
+                    <div class="col-6 message_holder" style="text-align: left;">
+                        <h3 class="message_placeholder">No message yet..</h3>
+                    </div>
+                    
+                    <div class="col-5" style="margin-left: 15px;">
+                        <div class="btn-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text h-100" style="background-color: #85c3cf; border: #25274d; color:#212121;"><b>Time per Question</b></span>
+                            </div>
+                            <button type="button" class="btn btn-dark">15s</button>
+                            <button type="button" class="btn btn-dark">20s</button>
+                            <button type="button" class="btn btn-dark">25s</button>
+                            <button type="button" class="btn btn-dark">30s</button>
+                            <button type="button" class="btn btn-dark">45s</button>
+                            <button type="button" class="btn btn-dark">60s</button>
+                            <button type="button" class="btn btn-dark" style="font-size: 20pt;">∞</button>
+                        </div>
+                        
+                        
+                        <div class="row mt-3">
+                            <div class="col">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox">
+                                    <label class="form-check-label" for="flexSwitchCheckDefault">Animals</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox">
+                                    <label class="form-check-label" for="flexSwitchCheckChecked">Brain Teasers</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox">
+                                    <label class="form-check-label" for="flexSwitchCheckDefault">Celebrities</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox">
+                                    <label class="form-check-label" for="flexSwitchCheckChecked">Entertainment</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox">
+                                    <label class="form-check-label" for="flexSwitchCheckDefault">For Kids</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox">
+                                    <label class="form-check-label" for="flexSwitchCheckChecked">General</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox">
+                                    <label class="form-check-label" for="flexSwitchCheckDefault">Geography</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox">
+                                    <label class="form-check-label" for="flexSwitchCheckChecked">History</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox">
+                                    <label class="form-check-label" for="flexSwitchCheckDefault">Hobbies</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox">
+                                    <label class="form-check-label" for="flexSwitchCheckChecked">Humanities</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox">
+                                    <label class="form-check-label" for="flexSwitchCheckDefault">Literature</label>
+                                </div>
+                                
+                                
+                            </div>
+                            
+                            <div class="col">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox">
+                                    <label class="form-check-label" for="flexSwitchCheckChecked">Movies</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox">
+                                    <label class="form-check-label" for="flexSwitchCheckDefault">Music</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox">
+                                    <label class="form-check-label" for="flexSwitchCheckChecked">Newest</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox">
+                                    <label class="form-check-label" for="flexSwitchCheckDefault">People</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox">
+                                    <label class="form-check-label" for="flexSwitchCheckChecked">Rated</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox">
+                                    <label class="form-check-label" for="flexSwitchCheckDefault">Religion/Faith</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox">
+                                    <label class="form-check-label" for="flexSwitchCheckChecked">Science/Technology</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox">
+                                    <label class="form-check-label" for="flexSwitchCheckDefault">Sports</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox">
+                                    <label class="form-check-label" for="flexSwitchCheckChecked">Television</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox">
+                                    <label class="form-check-label" for="flexSwitchCheckDefault">Video Games</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox">
+                                    <label class="form-check-label" for="flexSwitchCheckChecked">World</label>
+                                </div>  
+                            </div>
+                            
+                        </div>       
+                        
+                        
+                    </div>
+                    
+                    
+                </div>
+                
+                <div class="row">
+                    <div class="col-6 p-0" style="padding: 0px; margin-left: 15px;">
+                        <div class="input-group">
+                            <input type="text" class="text-nowrap form-control message" style="font-size: 18px;" placeholder="Message">
+                            <button type="submit" class="btn btn-dark text-nowrap" onclick="sendMessage()">Send</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <br/>
+                
+                <div class="col-1 offset-3">
+                    <button type="submit" class="btn btn-dark text-nowrap w-100"onclick="location.href = '/trivia';">Ready</button>
+                </div>
+                
+            </div>  
+            
+            
+            
+        </div>
+    </div>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.7.3/socket.io.min.js"></script>
+    
+    <script type="text/javascript">
+        
+        
+        
+        var socket = io.connect('http://' + document.domain + ':' + location.port);
+        
+        socket.on( 'connect', function() {
+            socket.emit( 'my event', {
+                data: 'User Connected'
+            } )
+        } )
+        
+        function sendMessage(){
+            let user_name = $( '#uid' ).data().name;
+            let user_input = $( 'input.message' ).val()
+            socket.emit( 'my event', {
+                user_name : user_name,
+                message : user_input
+            } )
+            $( 'input.message' ).val( '' ).focus()
+        }
+        
+        socket.on( 'my response', function( msg ) {
+            console.log( msg )
+            if( typeof msg.user_name !== 'undefined' ) {
+                $( 'h3.message_placeholder' ).remove()
+                $( 'div.message_holder' ).append( '<div class="text-wrap text-break"><b style="color: #000">'+msg.user_name+':</b> '+msg.message+'</div>' )
+                $( 'div.message_holder' ).stop().animate({ scrollTop: $( 'div.message_holder' )[0].scrollHeight}, 750);
+            }
+        })
+        
+        // Check if the sessionStorage object exists
+        if(sessionStorage) {
+            // Store data
+            sessionStorage.setItem('uid', userid)
+            // Retrieve data
+            alert("Hi, " + sessionStorage.getItem('uid'));
+        } else {
+            alert("Sorry, your browser do not support session storage.");
+        }   
+    </script>    
+    
+    <!--    
+        <script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
+        <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
+        <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+        
+        <Message/>
+        
+        <div id="chat"></div>
+        
+        <script type="text/babel">
+            import * as React from "react";
+            import { render } from "react-dom";
+            import createClass from 'create-react-class';
+            
+            
+            var Message = React.createClass({
+                render : function (){
+                    return (<h1>Test</h1>);
+                }
+            });
+            
+            ReactDOM.render(<Message/>, document.getElementById('chat'));
+            
+        </script>
+    -->
+    
+</body>
+</html>
