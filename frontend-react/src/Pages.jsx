@@ -2,7 +2,7 @@ import "./Pages.css";
 
 function Landing() {
   return (
-    <div className="container-fluid">
+    <div className="coontainer-fluid">
       <div className="row text-center m-3">
         <h1 className="text-nowrap">Quiz App</h1>
       </div>
@@ -24,29 +24,14 @@ function Landing() {
 }
 
 function Lobby() {
+  const categories = [
+
+  ]
   return (
 
     <div className="coontainer-fluid">
       <div className="row" style={{margin: "0px"}}>
-        <div className="col-2 sidebar text-center" style={{height: "100vh"}}>
-          <br />
-
-          <h3 style={{color:"#e8f9fc"}}>Players</h3>
-
-          <div className="player card mb-2">
-            <h5 className="card-title mb-0">Abe Abbleton</h5>
-          </div>
-
-          <div className="player card mb-2">
-            <h5 className="card-title mb-0">Bob Bobbington</h5>
-          </div>
-
-          <div className="player card mb-2">
-            <h5 className="card-title mb-0">Carl Carlton</h5>
-          </div>
-
-        </div>
-
+        <PlayerSidebar></PlayerSidebar>
 
         <div className="col-9">
 
@@ -199,30 +184,40 @@ function Lobby() {
   )
 }
 
+function PlayerSidebar(props) {
+  // let's have props.players be a array of objects, each with a name and optionally a score
+
+  return <div className="col-2 sidebar text-center" style={{ height: "100vh" }}>
+    <br />
+
+    <h3 style={{ color: "#e8f9fc" }}>Players</h3>
+    {
+      props.players.map((player, ind) => {
+        // we want this component to be able to be used on both the lobby and game screen
+        // so we should not expect it to always have a score
+        if(player.score){
+          return (
+          <div className="player card mb-2" key = {ind}>
+            <h5 className="card-title mb-0">{player.name}</h5>
+            <p className="card-text">{player.score} pts.</p>
+          </div>)
+
+        } else {
+          return (
+          <div className="player card mb-2" key = {ind}>
+            <h5 className="card-title mb-0">{player.name}</h5>
+          </div>)
+        }
+      })
+    }
+  </div>;
+}
+
 function Trivia() {
   return (
     <div className="coontainer-fluid">
       <div className="row">
-        <div className="col-2 text-center" style={{height: "100vh"}}>
-          <br />
-          <h3 style={{color:"#e8f9fc"}}>Players</h3>
-
-          <div className="card player mb-2">
-            <h5 className="card-title mb-0">Abe Abbleton</h5>
-            <p className="card-text">57 pts.</p>
-          </div>
-
-          <div className="card player mb-2">
-            <h5 className="card-title mb-0">Bob Bobbington</h5>
-            <p className="card-text">89 pts.</p>
-          </div>
-
-          <div className="card player mb-2">
-            <h5 className="card-title mb-0">Carl Carlton</h5>
-            <p className="card-text">4 pts.</p>
-          </div>
-
-        </div>
+        <PlayerSidebar />
         <div className="col-10 text-center">
           <br /><br />
           <h1 className="display-3" style={{color: "#212121"}}><strong>Question 1</strong></h1>
@@ -277,4 +272,4 @@ function Trivia() {
     </div>
   )
 }
-export { Landing, Trivia, Lobby };
+export { Landing, Trivia, Lobby, PlayerSidebar };
