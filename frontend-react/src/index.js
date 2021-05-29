@@ -3,10 +3,30 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+import {
+  BrowserRouter as Router,
+  Switch,
+  Route,
+  Link
+} from "react-router-dom";
+
+import { Landing, Lobby, Trivia} from './Pages';
 
 ReactDOM.render(
   <React.StrictMode>
-    <App />
+    <Router>
+      <Switch>
+        <Route path="/trivia">
+          <Trivia></Trivia>
+        </Route>
+        <Route path="/lobby">
+          <Lobby></Lobby>
+        </Route>
+        <Route path="/">
+          <Landing></Landing>
+        </Route>
+      </Switch>
+    </Router>
   </React.StrictMode>,
   document.getElementById('root')
 );

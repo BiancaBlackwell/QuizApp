@@ -1,0 +1,106 @@
+body{
+    background-image: url(./static/main_bg.png); 
+    background-size: cover;
+    background-attachment: fixed;
+}
+.btn-dark{
+    background-color: #25274d;
+    font-size: 15pt;
+    color:#e8f9fc;           
+}
+.btn-dark:hover{
+    background-color: #464866;
+    font-size: 15pt;
+    color:#e8f9fc;
+}
+.btn-group .btn-dark:not(:disabled):not(.disabled).active, .btn-group .btn-dark:not(:disabled):not(.disabled):active, .show>.btn.dropdown-toggle {
+    color: #fff;
+    background-color:darkorange;
+    border-color: darkorange;
+}
+.btn-dark:focus{
+    background-color: #464866;
+    font-size: 15pt;
+    color:#e8f9fc;
+}
+
+.sidebar{
+    background-color: #065464;
+}
+.message_holder{
+    background-color: #85c3cf;
+    color: #212121;
+    padding: 2%;
+    height: 50vh;
+    margin-left: 15px;
+    overflow-y:auto;
+}
+.player{
+    background-color: #85c3cf;
+    padding:2%;
+    color: #212121;
+}
+.card-title{
+    font-size: 20pt;
+}
+.textarea:focus,input[type="text"]:focus{
+    border-color: #25274d;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset, 0 0 8px #25274d;
+    outline: 0 none;
+}
+.form-check-label{
+    font-size: 15pt;
+}
+.row {
+    margin-left: 0px;
+    margin-right: 0px;
+}
+h1{
+    color: #212121;
+    font-size: 50pt;
+}
+.col-2{
+    background-color: #065464;
+}
+
+.row-5{
+    background-color: chartreuse;
+}
+.jumbotron{
+    background-color: #25274d;
+    color:#e8f9fc;
+    padding-top: 8%;
+    padding-bottom: 8%;
+    padding-left: 3%;
+    padding-right: 3%;
+    height: 100%;
+}
+.btn-primary{
+    background-color: #25274d;
+    border-color: #25274d;
+    color:#e8f9fc;
+    height: 100%;
+    padding: 5%;
+}    
+.btn-primary:hover{
+    background-color: #464866;
+    border-color: #25274d;
+    color:#e8f9fc;
+    height: 100%;
+    padding: 5%;
+}
+.answer{
+    font-size: 15pt;
+    vertical-align: middle;
+}
+.player{
+    background-color: #85c3cf;
+    color: #212121;
+}
+.card-title{
+    font-size: 20pt;
+}
+.card-text{
+    font-size: 15pt;
+}
+      
