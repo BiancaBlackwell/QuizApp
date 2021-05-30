@@ -23,7 +23,6 @@ body{
     font-size: 15pt;
     color:#e8f9fc;
 }
-
 .sidebar{
     background-color: #065464;
 }
@@ -40,9 +39,6 @@ body{
     padding:2%;
     color: #212121;
 }
-.card-title{
-    font-size: 20pt;
-}
 .textarea:focus,input[type="text"]:focus{
     border-color: #25274d;
     box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset, 0 0 8px #25274d;
@@ -51,20 +47,17 @@ body{
 .form-check-label{
     font-size: 15pt;
 }
-.row {
+.row{
     margin-left: 0px;
     margin-right: 0px;
 }
-h1{
+.main-title{
+    color: #212121;
+    font-size: 150pt;
+}   
+.lobby-heading{
     color: #212121;
     font-size: 50pt;
-}
-.col-2{
-    background-color: #065464;
-}
-
-.row-5{
-    background-color: chartreuse;
 }
 .jumbotron{
     background-color: #25274d;
@@ -97,17 +90,14 @@ h1{
     background-color: #85c3cf;
     color: #212121;
 }
+.question{
+    background-color: #85c3cf;
+    color: #212121;
+}
 .card-title{
     font-size: 20pt;
 }
 .card-text{
     font-size: 15pt;
 }
-.main-title{
-    color: #212121;
-    font-size: 150pt;
-}   
-.question{
-    background-color: #85c3cf;
-    color: #212121;
-}
+

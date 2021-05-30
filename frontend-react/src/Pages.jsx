@@ -40,7 +40,7 @@ function Lobby() {
         <div className="col-10">
 
           <br/>
-          <h1 className="text-center text-middle">Main Lobby</h1>
+          <h1 className="lobby-heading text-center text-middle">Main Lobby</h1>
           <p className="uid text-center" id="uid">1 </p>
 
           <br/><br/><br/>
