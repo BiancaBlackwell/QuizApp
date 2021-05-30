@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import App from './App';
-import { PlayerSidebar } from "./Pages";
+import { PlayerSidebar, Question } from "./Pages";
 
 test('PlayerSidebar with no score', async () => {
   render(<PlayerSidebar players = {
@@ -25,3 +25,15 @@ test('PlayerSidebar with score', async () => {
     expect(element).toBeInTheDocument();
   })
 });
+
+
+test("Question", async () => {
+  render(<Question question = "underwear?" answers = {["1", "2", "3", "4"]}/>)
+  // screen.debug();
+
+  const questionElement = await screen.findByText("underwear?");
+  expect(questionElement).toBeInTheDocument();
+
+  const answerElements = await screen.findAllByText(/^[0-9]$/);
+  expect(answerElements.length).toBe(4);
+})

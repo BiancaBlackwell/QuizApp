@@ -218,57 +218,60 @@ function Trivia() {
     <div className="coontainer-fluid">
       <div className="row">
         <PlayerSidebar />
-        <div className="col-10 text-center">
-          <br /><br />
-          <h1 className="display-3" style={{color: "#212121"}}><strong>Question 1</strong></h1>
-          <div className="row">
-            <div className="col-8 offset-2">
-              <div className="jumbotron">
-                <p className="lead" style={{fontSize: "25pt"}}>Russian people often referred to Grigori Rasputin as which of the following?</p>
-              </div>
-            </div>
+        <Question />
+      </div>
+    </div>
+  )
+}
+
+function Question(props) {
+  // props.question => string and props.answers => array of string answers
+  return (
+    <div className="col-10 text-center">
+      <br /><br />
+      <h1 className="display-3" style={{color: "#212121"}}><strong>Question 1</strong></h1>
+      <div className="row">
+        <div className="col-8 offset-2">
+          <div className="jumbotron">
+            <p className="lead" style={{fontSize: "25pt"}}>{props.question}</p>
           </div>
-          <br />
-          <div className="row">
-            <div className="col"></div>
-
-            <div className="col-3 same-height">
-              <button className="btn btn-primary btn-lg answer w-100 h-100">
-                Saintly mystic
-                  </button>
-            </div>
-
-            <div className="col-3 offset-1 same-height">
-              <button className="btn btn-primary btn-lg answer w-100 h-100">
-                All of these
-                  </button>
-            </div>
-
-            <div className="col"></div>
-          </div>
-
-          <br />
-
-          <div className="row">
-            <div className="col"></div>
-
-            <div className="col-3 same-height">
-              <button className="btn btn-primary btn-lg answer w-100 h-100">
-                Prophet
-                    </button>
-            </div>
-
-            <div className="col-3 offset-1 same-height">
-              <button className="btn btn-primary btn-lg answer w-100 h-100">
-                Religious pilgrim
-                    </button>
-            </div>
-
-            <div className="col"></div>
-          </div>
-
         </div>
       </div>
+      <br />
+      <div className="row">
+        <div className="col"></div>
+        {
+          // we want two answers in this column and the other two in the other column
+          props.answers.slice(0,2).map((answer, index) => {
+            return <div className="col-3 same-height" key = {index}>
+              <button className="btn btn-primary btn-lg answer w-100 h-100">
+                {answer}
+              </button>
+            </div>
+          })
+        }
+
+        <div className="col"></div>
+      </div>
+
+      <br />
+
+      <div className="row">
+        <div className="col"></div>
+        {
+          // we want two answers in this column and the other two in the other column
+          props.answers.slice(2).map((answer, index) => {
+            return <div className="col-3 same-height" key={index}>
+              <button className="btn btn-primary btn-lg answer w-100 h-100">
+                {answer}
+              </button>
+            </div>
+          })
+        }
+
+        <div className="col"></div>
+      </div>
+
     </div>
   )
 }
@@ -409,4 +412,4 @@ function Victory() {
   </div>  
 )
 }
-export { Landing, Trivia, Lobby, PlayerSidebar, Victory };
+export { Landing, Trivia, Lobby, PlayerSidebar, Victory, Question };
