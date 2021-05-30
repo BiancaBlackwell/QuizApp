@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import App from './App';
-import { PlayerSidebar, Question } from "./Pages";
+import { PlayerSidebar, Question, VictoryQuestions } from "./Pages";
 
 test('PlayerSidebar with no score', async () => {
   render(<PlayerSidebar players = {
@@ -47,4 +47,15 @@ test("TFQuestion", async () => {
 
   const answerElements = await screen.findAllByText(/^[0-9]$/);
   expect(answerElements.length).toBe(2);
+})
+
+test("VictoryQuestions", async () => {
+  render(<VictoryQuestions questions={[{ question: 'underwear?', correct_answer: 0, answers:["1", "2"]}, { question: 'underwear?', correct_answer: 3, answers:["1", "2", "3", "4"]}]}/>)
+  // screen.debug();
+
+  const questionElements = await screen.findAllByText("underwear?");
+  expect(questionElements.length).toBe(2);
+
+  const answerElements = await screen.findAllByText(/^[0-9]$/);
+  expect(answerElements.length).toBe(6);
 })

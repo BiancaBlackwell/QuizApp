@@ -275,6 +275,49 @@ function Question(props) {
   )
 }
 
+const questions = [{ question: 'underwear?', correct_answer: 0, answers:["yes", "no"]}, { question: 'underwear?', correct_answer: 3, answers:["yes", "no", "hell no", "hell yeah"]}];
+function VictoryQuestions(props) {
+
+  // props.questions => a array of objects, each with a question, an array of answers, and an int corresponding to the correct answer
+  return (          
+    <div className="row d-flex justify-content-center">
+      <h2 className="display-3" style={{color: "#212121"}}>Questions</h2>   
+
+      {
+        props.questions && props.questions.map((question, ind) => {
+          if(question.answers.length == 2){
+            return (<div className="card question mb-3 w-75">
+              <div className="card-body">
+                <h5 className="card-title mb-0">Question 1</h5>
+                <p className="card-text">{question.question}</p>
+                <div className="row">
+                  <div className="col"> {(question.correct_answer == 0) ? <h6>{question.answers[0]}</h6> : <h6 className="text-muted">{question.answers[0]}</h6>} </div>
+                  <div className="col"> {(question.correct_answer == 1) ? <h6>{question.answers[1]}</h6> : <h6 className="text-muted">{question.answers[1]}</h6>} </div>
+                </div>
+              </div>
+            </div>)
+          }
+          else{
+            return (<div className="card question mb-3 w-75">
+              <div className="card-body">
+                <h5 className="card-title mb-0">Question 1</h5>
+                <p className="card-text">{question.question}</p>
+                <div className="row">
+                  <div className="col"> {(question.correct_answer == 0) ? <h6>{question.answers[0]}</h6> : <h6 className="text-muted">{question.answers[0]}</h6>} </div>
+                  <div className="col"> {(question.correct_answer == 1) ? <h6>{question.answers[1]}</h6> : <h6 className="text-muted">{question.answers[1]}</h6>} </div>
+                  <div className="col"> {(question.correct_answer == 2) ? <h6>{question.answers[2]}</h6> : <h6 className="text-muted">{question.answers[2]}</h6>} </div>
+                  <div className="col"> {(question.correct_answer == 3) ? <h6>{question.answers[3]}</h6> : <h6 className="text-muted">{question.answers[3]}</h6>} </div>
+                </div>
+              </div>
+            </div>)
+          }
+        })
+      }
+    </div>
+  )
+}
+
+
 function Victory() {
   return (
   <div className="coontainer-fluid">
@@ -289,126 +332,62 @@ function Victory() {
 
         <div className="col-xs-12" style={{height: "20px"}}>
 
-        <div className="row">
-
           <div className="row">
 
-            <div className="col align-self-end">
-              <div className="card player">
-                <div className="col-xs-12" style={{height: "30px"}}></div>
-                <h5 className="card-title mb-0">Abe Abbleton</h5>
-                <p className="card-text">57 pts.</p>
+            <div className="row">
+
+              <div className="col align-self-end">
+                <div className="card player">
+                  <div className="col-xs-12" style={{height: "30px"}}></div>
+                  <h5 className="card-title mb-0">Abe Abbleton</h5>
+                  <p className="card-text">57 pts.</p>
+                </div>
               </div>
-            </div>
 
-            <div className="col align-self-end">
-              <div className="card player">
-                <div className="col-xs-12" style={{height: "100px"}}></div>
-                <h5 className="card-title mb-0">Bob Bobbington</h5>
-                <p className="card-text">89 pts.</p>
+              <div className="col align-self-end">
+                <div className="card player">
+                  <div className="col-xs-12" style={{height: "100px"}}></div>
+                  <h5 className="card-title mb-0">Bob Bobbington</h5>
+                  <p className="card-text">89 pts.</p>
+                </div>
               </div>
-            </div>
 
-            <div className="col align-self-end">
-              <div className="card player">
-                <h5 className="card-title mb-0">Bubbles</h5>
-                <p className="card-text">50 pts.</p>
+              <div className="col align-self-end">
+                <div className="card player">
+                  <h5 className="card-title mb-0">Bubbles</h5>
+                  <p className="card-text">50 pts.</p>
+                </div>
               </div>
+
             </div>
 
-          </div>
+            <div className = "row">
 
-          <div className = "row">
-
-            <div className="col">
-              <h5>2</h5>
-            </div>
-
-            <div className="col">
-              <h5>1</h5>
-            </div>
-
-            <div className="col">
-              <h5>3</h5>
-            </div>                                         
-          </div>
-        </div>
-
-        <div className="row d-flex justify-content-center">
-          <h2 className="display-3" style={{color: "#212121"}}>Questions</h2>   
-
-          <div className="card question mb-3 w-75">
-            <div className="card-body">
-              <h5 className="card-title mb-0">Question 1</h5>
-              <p className="card-text">Three of these animals hibernate. Which one does not?</p>
-              <div className="row">
-                <div className="col"><h6>Mouse</h6></div>
-                <div className="col"><h6 className="text-muted"> Sloth </h6></div>
-                <div className="col"><h6 className="text-muted"> Frog </h6></div>
-                <div className="col"><h6 className="text-muted"> Snake </h6></div>
+              <div className="col">
+                <h5>2</h5>
               </div>
+
+              <div className="col">
+                <h5>1</h5>
+              </div>
+
+              <div className="col">
+                <h5>3</h5>
+              </div>                                         
             </div>
           </div>
 
-          <div className="card question mb-3 w-75">
-            <div className="card-body">
-              <h5 className="card-title mb-0">Question 2</h5>
-              <p className="card-text">All of these animals are omnivorous except one.</p>
-              <div className="row">
-                <div className="col"><h6 className="text-muted">Fox</h6></div>
-                <div className="col"><h6 className="text-muted"> Mouse </h6></div>
-                <div className="col"><h6> Opossum </h6></div>
-                <div className="col"><h6 className="text-muted"> Snail </h6></div>
-              </div>
-            </div>
-          </div>
+          <br/>
 
-          <div className="card question mb-3 w-75">
-            <div className="card-body">
-            <h5 className="card-title mb-0">Question 3</h5>
-            <p className="card-text">Three of these Latin names are names of bears. Which is the odd one?</p>
-              <div className="row">
-                <div className="col"><h6 className="text-muted">Melursus ursinus</h6></div>
-                <div className="col"><h6 className="text-muted"> Helarctos malayanus </h6></div>
-                <div className="col"><h6> Ursus minimus </h6></div>
-                <div className="col"><h6 className="text-muted"> Felis silvestris catus </h6></div>
-              </div>
-            </div>
-          </div>
-
-          <div className="card question mb-3 w-75">
-            <div className="card-body">
-              <h5 className="card-title mb-0">Question 4</h5>
-              <p className="card-text">These are typical Australian animals except one.</p>
-              <div className="row">
-                <div className="col"><h6 className="text-muted">Platypus</h6></div>
-                <div className="col"><h6 className="text-muted"> Dingo </h6></div>
-                <div className="col"><h6> Echidna </h6></div>
-                <div className="col"><h6 className="text-muted"> Sloth </h6></div>
-              </div>
-            </div>
-          </div>
-
-          <div className="card question mb-3 w-75">
-            <div className="card-body">
-              <h5 className="card-title mb-0">Question 5</h5>
-              <p className="card-text">Representatives of three of these species produce venom of their own. Which is the odd species?</p>
-              <div className="row">
-                <div className="col"><h6 className="text-muted">Lizards</h6></div>
-                <div className="col"><h6 className="text-muted"> Scorpions </h6></div>
-                <div className="col"><h6> Frogs </h6></div>
-                <div className="col"><h6 className="text-muted"> Mosquitos </h6></div>
-              </div>
-            </div>
-          </div>
-
-          </div>
           <button type="submit" className="btn btn-dark text-nowrap w-75"onclick="location.href = '/lobby';">Return to Lobby</button>
-          <div className="col-xs-12" style={{height: "20px"}}></div>                                                               
+          <div className="col-xs-12" style={{height: "20px"}}></div> 
+
+          <VictoryQuestions/>
+
         </div>
       </div>
     </div>  
   </div>  
 )
 }
-export { Landing, Trivia, Lobby, PlayerSidebar, Victory, Question };
+export { Landing, Trivia, Lobby, PlayerSidebar, Victory, Question, VictoryQuestions };
