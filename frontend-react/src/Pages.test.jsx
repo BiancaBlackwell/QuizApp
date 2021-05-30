@@ -37,3 +37,14 @@ test("Question", async () => {
   const answerElements = await screen.findAllByText(/^[0-9]$/);
   expect(answerElements.length).toBe(4);
 })
+
+test("TFQuestion", async () => {
+  render(<Question question = "underwear?" answers = {["1", "2"]}/>)
+  // screen.debug();
+
+  const questionElement = await screen.findByText("underwear?");
+  expect(questionElement).toBeInTheDocument();
+
+  const answerElements = await screen.findAllByText(/^[0-9]$/);
+  expect(answerElements.length).toBe(2);
+})

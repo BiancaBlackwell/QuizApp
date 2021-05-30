@@ -255,23 +255,22 @@ function Question(props) {
       </div>
 
       <br />
-
-      <div className="row">
-        <div className="col"></div>
         {
           // we want two answers in this column and the other two in the other column
           props.answers.slice(2).map((answer, index) => {
-            return <div className="col-3 same-height" key={index}>
-              <button className="btn btn-primary btn-lg answer w-100 h-100">
-                {answer}
-              </button>
-            </div>
+            if(answer){
+              return <div className="row">
+                <div className="col"></div>
+                  <div className="col-3 same-height" key={index}>
+                    <button className="btn btn-primary btn-lg answer w-100 h-100">
+                      {answer}
+                    </button>
+                  </div>
+                <div className="col"></div>
+              </div>
+            }
           })
         }
-
-        <div className="col"></div>
-      </div>
-
     </div>
   )
 }
