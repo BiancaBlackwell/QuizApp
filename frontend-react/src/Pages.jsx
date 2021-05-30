@@ -3,20 +3,24 @@ import "./Pages.css";
 function Landing() {
   return (
     <div className="coontainer-fluid">
+      <br/><br/><br/><br/>
       <div className="row text-center m-3">
-        <h1 className="text-nowrap">Quiz App</h1>
+        <h1 className="text-nowrap main-title">Quiz App</h1>
       </div>
+      <br/><br/><br/>
       <div className="row align-items-center justify-content-center m-3">
-        <div className="col-2">
-          <div className="input-group">
-            <input type="text" className="form-control text-nowrap" placeholder="Lobby Code" />
-            <button type="submit" className="btn btn-dark text-nowrap">Join</button>
+        <div className="col-3">
+          <div class="input-group">
+          <input type="text" className="form-control text-nowrap" placeholder="Lobby Code" />
+            <div class="input-group-btn">
+              <button type="submit" className="btn btn-dark text-nowrap form-control" style={{width: "auto"}}>Join</button>
+            </div>
           </div>
         </div>
       </div>
       <div className="row text-center">
         <div className="col">
-          <button type="submit" className="btn btn-dark text-nowrap" onclick="location.href = '/lobby';">Create</button>
+          <button type="submit" className="btn btn-dark text-nowrap" onclick="window.location = '/lobby';">Create</button>
         </div>
       </div>
     </div>
@@ -30,25 +34,38 @@ function Lobby() {
   return (
 
     <div className="coontainer-fluid">
-      <div className="row" style={{margin: "0px"}}>
+      <div className="row">
         <PlayerSidebar />
 
-        <div className="col-9">
+        <div className="col-10">
 
-          <br />
-
+          <br/>
           <h1 className="text-center text-middle">Main Lobby</h1>
           <p className="uid text-center" id="uid">1 </p>
 
-          <br /><br /><br />
-
+          <br/><br/><br/>
           <div className="row">
 
-            <div className="col-6 message_holder" style={{textAlign: "left"}}>
-              <h3 className="message_placeholder">No message yet..</h3>
+            <div className="col-6 align-items-center justify-content-center">
+
+              <div className="row message_holder" style={{textAlign: "left"}}>
+                <h3 className="message_placeholder">No message yet..</h3>
+              </div>
+
+              <div className="input-group">
+                <input type="text" className="text-nowrap form-control message" style={{fontSize: "18px", placeholder:"Message"}} />
+                <button type="submit" className="btn btn-dark text-nowrap" onclick="sendMessage()">Send</button>
+              </div>
+
+              <br/>
+              <div style={{textAlign: "center"}}>
+                <button type="submit" className="btn btn-dark text-nowrap w-25" onclick="location.href = '/trivia';">Ready</button>
+              </div>
+
             </div>
 
             <div className="col-5" style={{marginLeft: "15px"}}>
+
               <div className="btn-group">
                 <div className="input-group-prepend">
                   <span className="input-group-text h-100" style={{backgroundColor: "#85c3cf", border: "#25274d", color:"#212121"}}><b>Time per Question</b></span>
@@ -61,7 +78,6 @@ function Lobby() {
                 <button type="button" className="btn btn-dark">60s</button>
                 <button type="button" className="btn btn-dark" style={{fontSize: "20pt"}}>∞</button>
               </div>
-
 
               <div className="row mt-3">
                 <div className="col">
@@ -109,7 +125,6 @@ function Lobby() {
                     <input className="form-check-input" type="checkbox" />
                     <label className="form-check-label" for="flexSwitchCheckDefault">Literature</label>
                   </div>
-
 
                 </div>
 
@@ -161,22 +176,7 @@ function Lobby() {
                 </div>
 
               </div>
-
             </div>
-
-          </div>
-
-          <div className="row">
-            <div className="col-6 p-0" style={{padding: "0px", marginLeft: "15px"}}>
-              <div className="input-group">
-                <input type="text" className="text-nowrap form-control message" style={{fontSize: "18px", placeholder:"Message"}} />
-                <button type="submit" className="btn btn-dark text-nowrap" onclick="sendMessage()">Send</button>
-              </div>
-            </div>
-          </div>
-          <br />
-          <div className="col-1 offset-3">
-            <button type="submit" className="btn btn-dark text-nowrap w-100" onclick="location.href = '/trivia';">Ready</button>
           </div>
         </div>
       </div>

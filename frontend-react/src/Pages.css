@@ -103,4 +103,7 @@ h1{
 .card-text{
     font-size: 15pt;
 }
-      
+.main-title{
+    color: #212121;
+    font-size: 150pt;
+}   
