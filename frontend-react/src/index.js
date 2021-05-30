@@ -10,12 +10,15 @@ import {
   Link
 } from "react-router-dom";
 
-import { Landing, Lobby, Trivia} from './Pages';
+import { Landing, Lobby, Trivia, Victory} from './Pages';
 
 ReactDOM.render(
   <React.StrictMode>
     <Router>
       <Switch>
+        <Route path="/victory">
+          <Victory></Victory>
+        </Route>
         <Route path="/trivia">
           <Trivia></Trivia>
         </Route>
