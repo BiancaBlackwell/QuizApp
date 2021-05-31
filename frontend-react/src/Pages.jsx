@@ -1,5 +1,4 @@
 import "./Pages.css";
-import "axios";
 import axios from "axios";
 import { Redirect } from "react-router-dom";
 import React, { useEffect, useState } from 'react';
@@ -67,6 +66,7 @@ function Landing() {
 }
 
 function Lobby(props) {
+  // this will throw an error when you go straight here rather than as a redirect from the landing page
   const userId = props.location.state.userId;
   console.log(userId);
   
