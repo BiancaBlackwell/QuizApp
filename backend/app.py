@@ -3,11 +3,13 @@ import sqlite3
 import random
 import uuid
 import string
+from flask_cors import CORS
 
 """How to use: flask run"""
 
 #cur.execute('''CREATE TABLE questions (id INTEGER PRIMARY KEY AUTOINCREMENT, question TEXT, answer_one TEXT, answer_two TEXT, answer_three TEXT, answer_four TEXT, correct_answer INT)''')
 app = Flask(__name__)
+CORS(app)
 DATABASE = 'trivia.db'
 
 @app.route('/')
