@@ -275,8 +275,8 @@ function Question(props) {
   )
 }
 
-const questions = [{ question: 'underwear?', correct_answer: 0, answers:["yes", "no"]}, { question: 'underwear?', correct_answer: 3, answers:["yes", "no", "hell no", "hell yeah"]}];
 function VictoryQuestions(props) {
+  // const questions = [{ question: 'underwear?', correct_answer: 0, answers:["yes", "no"]}, { question: 'underwear?', correct_answer: 3, answers:["yes", "no", "hell no", "hell yeah"]}];
 
   // props.questions => a array of objects, each with a question, an array of answers, and an int corresponding to the correct answer
   return (          
