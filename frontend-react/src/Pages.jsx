@@ -1,6 +1,39 @@
 import "./Pages.css";
+import "axios";
+import axios from "axios";
+import { Redirect } from "react-router-dom";
+import React, { useEffect, useState } from 'react';
+
+const BACKEND_URL = "http://localhost:5000"
 
 function Landing() {
+  const [userRoomId, setUserRoomId] = useState({userId: undefined, roomId: undefined});
+  const [redirectToLobby, setRedirectToLobby] = useState(false);
+  const [createButtonEnabled, setCreateButtonEnabled] = useState(true);
+
+  // this effect gets run whenever userRoomId gets updated (because it's in the array we provide as an argument) -- in this case, after we get it from the backend in createAndJoinRoom
+  useEffect(() => {
+    // make sure they're both set
+    if(userRoomId.userId && userRoomId.roomId){
+      axios.get(`${BACKEND_URL}/backend/joinRoom/${userRoomId.userId}=${userRoomId.roomId}`).then((res) => {
+        // useEffect functions can't be async so we're using .then 
+        setRedirectToLobby(true);
+      }, (err) => {
+        alert("failed to join lobby, sorry!");
+      });
+    }
+  }, [userRoomId])
+
+  async function createAndJoinRoom(){
+    // disable the create button while we're loading
+    setCreateButtonEnabled(false);
+    let createUserResponse = await axios.get(`${BACKEND_URL}/backend/createUser`);
+    let createRoomResponse = await axios.get(`${BACKEND_URL}/backend/createRoom`)
+    
+    // all we need to do here is set the state, the effect handles the join and redirect
+    setUserRoomId({roomId: createRoomResponse.data, userId: createUserResponse.data});
+  }
+
   return (
     <div className="coontainer-fluid">
       <br/><br/><br/><br/>
@@ -10,9 +43,9 @@ function Landing() {
       <br/><br/><br/>
       <div className="row align-items-center justify-content-center m-3">
         <div className="col-3">
-          <div class="input-group">
+          <div className="input-group">
           <input type="text" className="form-control text-nowrap" placeholder="Lobby Code" />
-            <div class="input-group-btn">
+            <div className="input-group-btn">
               <button type="submit" className="btn btn-dark text-nowrap form-control" style={{width: "auto"}}>Join</button>
             </div>
           </div>
@@ -20,17 +53,23 @@ function Landing() {
       </div>
       <div className="row text-center">
         <div className="col">
-          <button type="submit" className="btn btn-dark text-nowrap" onclick="window.location = '/lobby';">Create</button>
+          <button type="submit" enabled = {createButtonEnabled.toString()} className="btn btn-dark text-nowrap" onClick={ createAndJoinRoom }>Create</button>
+
+          {redirectToLobby && <Redirect to={{
+              pathname:`/lobby/${userRoomId.roomId}`, 
+              state: { userId: userRoomId.userId } // this is accessed with props.location.state.userId in the lobby component. fine to pass as a prop b/c it won't change
+            }} 
+          />}
         </div>
       </div>
     </div>
     )
 }
 
-function Lobby() {
-  const categories = [
-
-  ]
+function Lobby(props) {
+  const userId = props.location.state.userId;
+  console.log(userId);
+  
   return (
 
     <div className="coontainer-fluid">
@@ -285,14 +324,14 @@ function VictoryQuestions(props) {
 
       {
         props.questions && props.questions.map((question, ind) => {
-          if(question.answers.length == 2){
+          if(question.answers.length === 2){
             return (<div className="card question mb-3 w-75">
               <div className="card-body">
                 <h5 className="card-title mb-0">Question 1</h5>
                 <p className="card-text">{question.question}</p>
                 <div className="row">
-                  <div className="col"> {(question.correct_answer == 0) ? <h6>{question.answers[0]}</h6> : <h6 className="text-muted">{question.answers[0]}</h6>} </div>
-                  <div className="col"> {(question.correct_answer == 1) ? <h6>{question.answers[1]}</h6> : <h6 className="text-muted">{question.answers[1]}</h6>} </div>
+                  <div className="col"> {(question.correct_answer === 0) ? <h6>{question.answers[0]}</h6> : <h6 className="text-muted">{question.answers[0]}</h6>} </div>
+                  <div className="col"> {(question.correct_answer === 1) ? <h6>{question.answers[1]}</h6> : <h6 className="text-muted">{question.answers[1]}</h6>} </div>
                 </div>
               </div>
             </div>)
@@ -303,10 +342,10 @@ function VictoryQuestions(props) {
                 <h5 className="card-title mb-0">Question 1</h5>
                 <p className="card-text">{question.question}</p>
                 <div className="row">
-                  <div className="col"> {(question.correct_answer == 0) ? <h6>{question.answers[0]}</h6> : <h6 className="text-muted">{question.answers[0]}</h6>} </div>
-                  <div className="col"> {(question.correct_answer == 1) ? <h6>{question.answers[1]}</h6> : <h6 className="text-muted">{question.answers[1]}</h6>} </div>
-                  <div className="col"> {(question.correct_answer == 2) ? <h6>{question.answers[2]}</h6> : <h6 className="text-muted">{question.answers[2]}</h6>} </div>
-                  <div className="col"> {(question.correct_answer == 3) ? <h6>{question.answers[3]}</h6> : <h6 className="text-muted">{question.answers[3]}</h6>} </div>
+                  <div className="col"> {(question.correct_answer === 0) ? <h6>{question.answers[0]}</h6> : <h6 className="text-muted">{question.answers[0]}</h6>} </div>
+                  <div className="col"> {(question.correct_answer === 1) ? <h6>{question.answers[1]}</h6> : <h6 className="text-muted">{question.answers[1]}</h6>} </div>
+                  <div className="col"> {(question.correct_answer === 2) ? <h6>{question.answers[2]}</h6> : <h6 className="text-muted">{question.answers[2]}</h6>} </div>
+                  <div className="col"> {(question.correct_answer === 3) ? <h6>{question.answers[3]}</h6> : <h6 className="text-muted">{question.answers[3]}</h6>} </div>
                 </div>
               </div>
             </div>)

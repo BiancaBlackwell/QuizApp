@@ -20,9 +20,7 @@ ReactDOM.render(
         <Route path="/trivia">
           <Trivia></Trivia>
         </Route>
-        <Route path="/lobby">
-          <Lobby></Lobby>
-        </Route>
+        <Route path="/lobby" render={(props) => <Lobby {...props} />} />
         <Route path="/">
           <Landing></Landing>
         </Route>

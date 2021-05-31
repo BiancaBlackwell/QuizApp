@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, abort
 import sqlite3
 import random
 import uuid
@@ -65,10 +65,8 @@ def createUser():
 #Add user to room or generate room
 @app.route('/backend/joinRoom/<userid>=<roomid>')
 def joinRoom(userid, roomid):
-	if not verifyUser:
-		return "False"
-	if not verifyRoom:
-		return "False"
+	if not verifyUser(userid) or not verifyRoom(roomid):
+		abort(500)
 
 	db = get_db()
 	cur = db.cursor()
@@ -106,7 +104,7 @@ def removeRoom(roomid):
 
 	#verify the room exists
 	if not verifyRoom(roomid):
-		return "False"
+		abort(500)
 
 	#remove room to database
 	db = get_db()
@@ -126,7 +124,7 @@ def removeUser(userid):
 
 	#verify the room exists
 	if not verifyUser(userid):
-		return "False"
+		abort(500)
 
 	#remove room to database
 	db = get_db()
