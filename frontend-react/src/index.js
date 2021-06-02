@@ -8,19 +8,13 @@ import {
   Link
 } from "react-router-dom";
 
-import { Landing, Lobby, Trivia, Victory} from './Pages';
+import { Landing, GameStateHandler} from './Pages';
 
 ReactDOM.render(
   <React.StrictMode>
     <Router>
       <Switch>
-        <Route path="/victory">
-          <Victory></Victory>
-        </Route>
-        <Route path="/trivia">
-          <Trivia></Trivia>
-        </Route>
-        <Route path="/lobby" render={(props) => <Lobby {...props} />} />
+        <Route path="/game/:roomId" render={(props) => <GameStateHandler {...props} />} />
         <Route path="/">
           <Landing></Landing>
         </Route>

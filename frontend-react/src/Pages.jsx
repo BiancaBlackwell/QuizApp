@@ -1,6 +1,6 @@
 import "./Pages.css";
 import axios from "axios";
-import { Redirect } from "react-router-dom";
+import { Redirect, useParams } from "react-router-dom";
 import React, { useEffect, useState } from 'react';
 
 const BACKEND_URL = "http://localhost:5000"
@@ -27,7 +27,7 @@ function Landing() {
     // disable the create button while we're loading
     setCreateButtonEnabled(false);
     let createUserResponse = await axios.get(`${BACKEND_URL}/backend/createUser`);
-    let createRoomResponse = await axios.get(`${BACKEND_URL}/backend/createRoom`)
+    let createRoomResponse = await axios.get(`${BACKEND_URL}/backend/createRoom`);
     
     // all we need to do here is set the state, the effect handles the join and redirect
     setUserRoomId({roomId: createRoomResponse.data, userId: createUserResponse.data});
@@ -55,7 +55,7 @@ function Landing() {
           <button type="submit" enabled = {createButtonEnabled.toString()} className="btn btn-dark text-nowrap" onClick={ createAndJoinRoom }>Create</button>
 
           {redirectToLobby && <Redirect to={{
-              pathname:`/lobby/${userRoomId.roomId}`, 
+              pathname:`/game/${userRoomId.roomId}`, 
               state: { userId: userRoomId.userId } // this is accessed with props.location.state.userId in the lobby component. fine to pass as a prop b/c it won't change
             }} 
           />}
@@ -65,9 +65,55 @@ function Landing() {
     )
 }
 
-function Lobby(props) {
-  // this will throw an error when you go straight here rather than as a redirect from the landing page
-  const userId = props.location.state.userId;
+function GameStateHandler(props) {
+  // NOTE: this component is where we'll do all the fancy webhook stuff
+  // and pass the results to the children
+
+  // this gets the url roomId
+  const { roomId } = useParams();
+  // track what part of the game UI we want to display
+  // this should be either lobby, game, or victory
+  const [currentPage, setCurrentPage] = useState("lobby");
+
+  // since anyone can click this link we cannot rely on the userId prop being filled here
+  const [userId, setUserId] = useState(() => {
+    // function args to useState are run once to get the intial value
+    if(props.location.state){
+      // this will be the userId that gets passed from the redirect of the Lobby component
+      return props.location.state.userId;
+    } else{
+      return undefined;
+    }
+  });
+
+  // handle creating the userId if the person came here by clicking the link
+  useEffect(() => {
+    if(userId === undefined){
+      axios.get(`${BACKEND_URL}/backend/createUser`).then((createUserResponse) => {
+        if (createUserResponse.status === 200) {
+          setUserId(createUserResponse.data);
+        } else {
+          alert("wasn't able to create your userId, sorry!");
+        }
+      });
+    }
+    // passing an empty array to useEffect makes it run once when the component is mounted
+  }, []);
+
+
+  return (
+    <div>
+      <div>{roomId}</div>
+      {currentPage === "lobby" && <Lobby userId = {userId} roomId = {roomId} />}
+      {currentPage === "trivia" && <Trivia userId = {userId} roomId = {roomId} />}
+      {currentPage === "victory" && <Victory userId = {userId} roomId = {roomId} />}
+    </div>
+  )
+}
+
+// can use destructuring here to be more explict abt what we pass as props
+function Lobby({userId, roomId}) {
+  
   console.log(userId);
   
   return (
@@ -429,4 +475,4 @@ function Victory() {
   </div>  
 )
 }
-export { Landing, Trivia, Lobby, PlayerSidebar, Victory, Question, VictoryQuestions };
+export { Landing, Trivia, Lobby, PlayerSidebar, Victory, Question, GameStateHandler };
