@@ -1,9 +1,10 @@
-from flask import Flask, abort
+from flask import Flask, abort, render_template
 import sqlite3
 import random
 import uuid
 import string
 from flask_cors import CORS
+from flask_socketio import SocketIO, emit, join_room, leave_room
 
 """How to use: flask run"""
 
@@ -11,12 +12,26 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 DATABASE = 'trivia.db'
+socketio = SocketIO(app)
 
+values = {
+	'slider1':25,
+	'slider2':0, 
+}
 @app.route('/')
 def index():
-	return 'Hello World'
+	return render_template('lobby.html',**values)
 
+#Handler for message recieved on 'connect' channel. Called after user has gotten id and roomid (successfully joined room)
+@socketio.on('connect')
+def test_connect():
+	#add user for everyone connected to same room
+	emite('after connect', {'data': 'Lets Dance'})
 
+@socketio.on('Slider value changed')
+def value_changed(message):
+    values[message['who']] = message['data']
+    emit('update value', message, broadcast=True)
 
 #####~~~~~~~~~~~~~~~ Questions ~~~~~~~~~~~~~~~#####
 
@@ -191,4 +206,4 @@ def getRandomString(length):
 
 
 if __name__ == '__main__':
-	app.run(debug=True)
+	socketio.run(app,debug=True)
