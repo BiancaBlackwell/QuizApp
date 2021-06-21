@@ -26,12 +26,23 @@ def index():
 @socketio.on('connect')
 def test_connect():
 	#add user for everyone connected to same room
-	emite('after connect', {'data': 'Lets Dance'})
+	emit('connected')
 
-@socketio.on('Slider value changed')
-def value_changed(message):
-    values[message['who']] = message['data']
-    emit('update value', message, broadcast=True)
+@socketio.on('identify')
+def identify(message):
+	#client tells server what room they are in (right now, we just trust that)
+    roomId = message
+   	emit('recieved')
+    #values[message['who']] = message['data']
+    #emit('update value', message, broadcast=True)
+
+@socketio.on('message')
+def recvMessage(message):
+	roomid = message[0:7]
+	message = message[8:-1]
+	emit('update chat', message, broadcast=True, room= roomid)
+
+
 
 #####~~~~~~~~~~~~~~~ Questions ~~~~~~~~~~~~~~~#####
 
