@@ -1,13 +1,12 @@
 import "./Pages.css";
 import axios from "axios";
 import { Redirect, useParams } from "react-router-dom";
-import React, { useEffect, useState } from 'react';
-import io from 'socket.io-client'
-
-let socket = io.connect(SOCKET_URL);
+import React, { useEffect, useState, useRef } from 'react';
+import {socket} from "./service/socket";
 
 const BACKEND_URL = "http://localhost:5000"
-const SOCKET_URL = "http://localhost:5050"
+
+
 
 function Landing() {
   const [userRoomId, setUserRoomId] = useState({userId: undefined, roomId: undefined});
@@ -126,14 +125,37 @@ function Lobby({userId, roomId}) {
 
 
 
+
+  console.log("Lobby")
+
+
   const [messages, setMessages] = useState(["Hello And Welcome"]);
   const [message, setMessage] = useState("");
+  const socketClientRef = useRef()
 
+
+  useEffect(() => {
+
+    socket.on("connected", msg => {
+      console.log("connected")
+      socket.emit("identify", roomId);
+    });
+
+    socket.on("update chat", msg => {
+      setMessages([...messages, msg]);
+    });
+    socketClientRef.current = socket
+    return () => {
+      socket.removeAllListeners()
+    }
+  }, []);
+/*
   useEffect(() => {
     getMessages();
   }, [messages.length]);
 
   socket.on("connected", msg => {
+    console.log("connected")
     socket.emit("identify", roomId);
   });
 
@@ -141,23 +163,18 @@ function Lobby({userId, roomId}) {
     socket.on("update chat", msg => {
       setMessages([...messages, msg]);
     });
-  };
-
-  // On Change
-  const onChange = e => {
-    setMessage(e.target.value);
-  };
+  };*/
 
   // On Click
   const onClick = () => {
+    console.log('click')
     if (message !== "") {
-      socket.emit("message", roomid+message);
+      socket.emit("message", ""+roomId+message);
       setMessage("");
     } else {
       alert("Please Add A Message");
     }
   };
-
 
 
 
@@ -180,7 +197,7 @@ function Lobby({userId, roomId}) {
 
           <br/><br/><br/>
           <div className="row">
-
+  
             <div className="col-6 align-items-center justify-content-center">
 
               <div className="row message_holder" style={{textAlign: "left"}}>
@@ -196,7 +213,7 @@ function Lobby({userId, roomId}) {
               </div>
 
               <div className="input-group">
-                <input type="text" className="text-nowrap form-control message" style={{fontSize: "18px", placeholder:"Message"}} value={message} name="message" onChange={e => onChange(e)} />
+                <input type="text" className="text-nowrap form-control message" style={{fontSize: "18px", placeholder:"Message"}} value={message} name="message" onChange={e => setMessage(e.target.value)} />
                 <button type="submit" className="btn btn-dark text-nowrap" onClick={() => onClick()}>Send</button>
               </div>
 

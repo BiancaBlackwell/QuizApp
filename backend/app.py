@@ -12,7 +12,7 @@ from flask_socketio import SocketIO, emit, join_room, leave_room
 app = Flask(__name__)
 CORS(app)
 DATABASE = 'trivia.db'
-socketio = SocketIO(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 values = {
 	'slider1':25,
@@ -25,19 +25,22 @@ def index():
 #Handler for message recieved on 'connect' channel. Called after user has gotten id and roomid (successfully joined room)
 @socketio.on('connect')
 def test_connect():
+	print("connected")
 	#add user for everyone connected to same room
-	emit('connected')
+	emit('connected') 
 
 @socketio.on('identify')
 def identify(message):
+	print('identify')
 	#client tells server what room they are in (right now, we just trust that)
-    roomId = message
-   	emit('recieved')
-    #values[message['who']] = message['data']
-    #emit('update value', message, broadcast=True)
+	roomId = message
+	emit('recieved')
+	#values[message['who']] = message['data']
+	#emit('update value', message, broadcast=True)
 
 @socketio.on('message')
 def recvMessage(message):
+	print('message')
 	roomid = message[0:7]
 	message = message[8:-1]
 	emit('update chat', message, broadcast=True, room= roomid)
@@ -211,10 +214,10 @@ def verifyRoom(roomid):
 	return False 
 
 def getRandomString(length):
-    letters = string.ascii_lowercase + string.ascii_uppercase
-    result_str = ''.join(random.choice(letters) for i in range(length))
-    return result_str
+	letters = string.ascii_lowercase + string.ascii_uppercase
+	result_str = ''.join(random.choice(letters) for i in range(length))
+	return result_str
 
 
 if __name__ == '__main__':
-	socketio.run(app,debug=True)
+	socketio.run(app,debug=False, port=5050)	
