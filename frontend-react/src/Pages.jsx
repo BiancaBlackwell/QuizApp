@@ -2,8 +2,12 @@ import "./Pages.css";
 import axios from "axios";
 import { Redirect, useParams } from "react-router-dom";
 import React, { useEffect, useState } from 'react';
+import io from 'socket.io-client'
+
+let socket = io.connect(SOCKET_URL);
 
 const BACKEND_URL = "http://localhost:5000"
+const SOCKET_URL = "http://localhost:5050"
 
 function Landing() {
   const [userRoomId, setUserRoomId] = useState({userId: undefined, roomId: undefined});
@@ -66,6 +70,11 @@ function Landing() {
 }
 
 function GameStateHandler(props) {
+
+
+  
+
+
   // NOTE: this component is where we'll do all the fancy webhook stuff
   // and pass the results to the children
 
@@ -113,6 +122,47 @@ function GameStateHandler(props) {
 
 // can use destructuring here to be more explict abt what we pass as props
 function Lobby({userId, roomId}) {
+
+
+
+
+  const [messages, setMessages] = useState(["Hello And Welcome"]);
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    getMessages();
+  }, [messages.length]);
+
+  socket.on("connected", msg => {
+    socket.emit("identify", roomId);
+  });
+
+  const getMessages = () => {
+    socket.on("update chat", msg => {
+      setMessages([...messages, msg]);
+    });
+  };
+
+  // On Change
+  const onChange = e => {
+    setMessage(e.target.value);
+  };
+
+  // On Click
+  const onClick = () => {
+    if (message !== "") {
+      socket.emit("message", roomid+message);
+      setMessage("");
+    } else {
+      alert("Please Add A Message");
+    }
+  };
+
+
+
+
+
+
   
   console.log(userId);
   
@@ -134,12 +184,20 @@ function Lobby({userId, roomId}) {
             <div className="col-6 align-items-center justify-content-center">
 
               <div className="row message_holder" style={{textAlign: "left"}}>
-                <h3 className="message_placeholder">No message yet..</h3>
+
+                { messages.length == 0 && <h3 className="message_placeholder">No message yet..</h3> }
+
+                {messages.length > 0 && messages.map(msg => (
+                  <div>
+                    <p>{msg}</p>
+                  </div>
+                ))}
+
               </div>
 
               <div className="input-group">
-                <input type="text" className="text-nowrap form-control message" style={{fontSize: "18px", placeholder:"Message"}} />
-                <button type="submit" className="btn btn-dark text-nowrap" onclick="sendMessage()">Send</button>
+                <input type="text" className="text-nowrap form-control message" style={{fontSize: "18px", placeholder:"Message"}} value={message} name="message" onChange={e => onChange(e)} />
+                <button type="submit" className="btn btn-dark text-nowrap" onClick={() => onClick()}>Send</button>
               </div>
 
               <br/>
