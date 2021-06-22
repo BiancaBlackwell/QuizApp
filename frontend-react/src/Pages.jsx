@@ -2,9 +2,11 @@ import "./Pages.css";
 import axios from "axios";
 import { Redirect, useParams } from "react-router-dom";
 import React, { useEffect, useState, useRef } from 'react';
-import {socket} from "./service/socket";
+import socket from "./socket";
+
 
 const BACKEND_URL = "http://localhost:5000"
+
 
 
 
@@ -96,6 +98,7 @@ function GameStateHandler(props) {
 
   // handle creating the userId if the person came here by clicking the link
   useEffect(() => {
+
     if(userId === undefined){
       axios.get(`${BACKEND_URL}/backend/createUser`).then((createUserResponse) => {
         if (createUserResponse.status === 200) {
@@ -122,63 +125,37 @@ function GameStateHandler(props) {
 // can use destructuring here to be more explict abt what we pass as props
 function Lobby({userId, roomId}) {
 
-
-
-
-
-  console.log("Lobby")
-
-
   const [messages, setMessages] = useState(["Hello And Welcome"]);
   const [message, setMessage] = useState("");
-  const socketClientRef = useRef()
 
-
-  useEffect(() => {
-
-    socket.on("connected", msg => {
-      console.log("connected")
-      socket.emit("identify", roomId);
-    });
-
-    socket.on("update chat", msg => {
-      setMessages([...messages, msg]);
-    });
-    socketClientRef.current = socket
-    return () => {
-      socket.removeAllListeners()
-    }
-  }, []);
-/*
   useEffect(() => {
     getMessages();
   }, [messages.length]);
 
-  socket.on("connected", msg => {
-    console.log("connected")
-    socket.emit("identify", roomId);
-  });
-
   const getMessages = () => {
-    socket.on("update chat", msg => {
+    socket.on("message", msg => {
+      //   let allMessages = messages;
+      //   allMessages.push(msg);
+      //   setMessages(allMessages);
       setMessages([...messages, msg]);
     });
-  };*/
+  };
+
+  // On Change
+  const onChange = e => {
+    setMessage(e.target.value);
+  };
 
   // On Click
   const onClick = () => {
-    console.log('click')
     if (message !== "") {
-      socket.emit("message", ""+roomId+message);
+      console.log(message)
+      socket.emit("sendMessage", message);
       setMessage("");
     } else {
       alert("Please Add A Message");
     }
   };
-
-
-
-
 
   
   console.log(userId);
@@ -196,24 +173,27 @@ function Lobby({userId, roomId}) {
           <p className="uid text-center" id="uid">1 </p>
 
           <br/><br/><br/>
+
+
+          
           <div className="row">
   
-            <div className="col-6 align-items-center justify-content-center">
+            <div className="col-6">
 
               <div className="row message_holder" style={{textAlign: "left"}}>
 
                 { messages.length == 0 && <h3 className="message_placeholder">No message yet..</h3> }
 
                 {messages.length > 0 && messages.map(msg => (
-                  <div>
-                    <p>{msg}</p>
+                  <div style={{height:"25px"}}>
+                    {msg}
                   </div>
                 ))}
 
               </div>
 
               <div className="input-group">
-                <input type="text" className="text-nowrap form-control message" style={{fontSize: "18px", placeholder:"Message"}} value={message} name="message" onChange={e => setMessage(e.target.value)} />
+                <input type="text" className="text-nowrap form-control message" style={{fontSize: "18px", placeholder:"Message"}} value={message} name="message" onChange={e => onChange(e)} />
                 <button type="submit" className="btn btn-dark text-nowrap" onClick={() => onClick()}>Send</button>
               </div>
 
@@ -223,6 +203,9 @@ function Lobby({userId, roomId}) {
               </div>
 
             </div>
+
+
+
 
             <div className="col-5" style={{marginLeft: "15px"}}>
 

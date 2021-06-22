@@ -4,12 +4,15 @@ import random
 import uuid
 import string
 from flask_cors import CORS
-from flask_socketio import SocketIO, emit, join_room, leave_room
+from flask_socketio import SocketIO, emit, join_room, leave_room, send
 
 """How to use: flask run"""
 
 #cur.execute('''CREATE TABLE questions (id INTEGER PRIMARY KEY AUTOINCREMENT, question TEXT, answer_one TEXT, answer_two TEXT, answer_three TEXT, answer_four TEXT, correct_answer INT)''')
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'mysecret'
+app.debug = True
+app.host = 'localhost'
 CORS(app)
 DATABASE = 'trivia.db'
 socketio = SocketIO(app, cors_allowed_origins="*")
@@ -23,27 +26,30 @@ def index():
 	return render_template('lobby.html',**values)
 
 #Handler for message recieved on 'connect' channel. Called after user has gotten id and roomid (successfully joined room)
-@socketio.on('connect')
+""" @socketio.on('connect')
 def test_connect():
 	print("connected")
 	#add user for everyone connected to same room
-	emit('connected') 
+	emit('connected')
+	emit('update chat', "test", broadcast=True) """
 
-@socketio.on('identify')
+""" @socketio.on('identify')
 def identify(message):
 	print('identify')
 	#client tells server what room they are in (right now, we just trust that)
 	roomId = message
 	emit('recieved')
 	#values[message['who']] = message['data']
-	#emit('update value', message, broadcast=True)
+	#emit('update value', message, broadcast=True) """
 
-@socketio.on('message')
+@socketio.on('sendMessage')
 def recvMessage(message):
 	print('message')
-	roomid = message[0:7]
-	message = message[8:-1]
-	emit('update chat', message, broadcast=True, room= roomid)
+	print(message)
+	#roomid = message[0:7]
+	#message = message[8:-1]
+	emit('message', message, broadcast=True)
+	#emit('update chat', message, broadcast=True, room= roomid)
 
 
 
@@ -220,4 +226,4 @@ def getRandomString(length):
 
 
 if __name__ == '__main__':
-	socketio.run(app,debug=False, port=5050)	
+	socketio.run(app)	
