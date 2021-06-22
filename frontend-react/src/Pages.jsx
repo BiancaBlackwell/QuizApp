@@ -125,7 +125,7 @@ function GameStateHandler(props) {
 // can use destructuring here to be more explict abt what we pass as props
 function Lobby({userId, roomId}) {
 
-  const [messages, setMessages] = useState(["Hello And Welcome"]);
+  const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -134,9 +134,7 @@ function Lobby({userId, roomId}) {
 
   const getMessages = () => {
     socket.on("message", msg => {
-      //   let allMessages = messages;
-      //   allMessages.push(msg);
-      //   setMessages(allMessages);
+      console.log("New Message: "+msg)
       setMessages([...messages, msg]);
     });
   };
@@ -181,15 +179,15 @@ function Lobby({userId, roomId}) {
             <div className="col-6">
 
               <div className="row message_holder" style={{textAlign: "left"}}>
+                <div>
+                  { messages.length == 0 && <h3 className="message_placeholder">No message yet..</h3> }
 
-                { messages.length == 0 && <h3 className="message_placeholder">No message yet..</h3> }
-
-                {messages.length > 0 && messages.map(msg => (
-                  <div style={{height:"25px"}}>
-                    {msg}
-                  </div>
-                ))}
-
+                  {messages.length > 0 && messages.map(msg => (
+                    <div style={{height:"25px"}}>
+                      {msg}
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div className="input-group">
