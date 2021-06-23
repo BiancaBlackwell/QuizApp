@@ -44,9 +44,10 @@ def identify(data):
 def recvMessage(data):
 	roomid = data["roomId"]
 	message = data["message"]
-	print(f'Recieved Message for room "{roomid}": {message}')
+	userId = data["userId"]
+	print(f'Recieved Message for room "{roomid}": {message} from {userId}')
 	#emit('message', message, broadcast=True)
-	emit('message', message, broadcast=True, room=roomid)
+	emit('message', {"message":message, "userId":userId}, broadcast=True, room=roomid)
 
 
 

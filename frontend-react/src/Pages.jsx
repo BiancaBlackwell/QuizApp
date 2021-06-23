@@ -14,6 +14,9 @@ function Landing() {
   const [userRoomId, setUserRoomId] = useState({userId: undefined, roomId: undefined});
   const [redirectToLobby, setRedirectToLobby] = useState(false);
   const [createButtonEnabled, setCreateButtonEnabled] = useState(true);
+  const [joinButtonEnabled, setJoinButtonEnabled] = useState(true);
+  const [lobbyCode, setlobbyCode] = useState("");
+
 
   // this effect gets run whenever userRoomId gets updated (because it's in the array we provide as an argument) -- in this case, after we get it from the backend in createAndJoinRoom
   useEffect(() => {
@@ -28,9 +31,25 @@ function Landing() {
     }
   }, [userRoomId])
 
+  // On Change
+  const onChange = e => {
+    setlobbyCode(e.target.value);
+  };
+
+  async function joinRoom(){
+    console.log(lobbyCode)
+    setCreateButtonEnabled(false);
+    setJoinButtonEnabled(false);
+    let createUserResponse = await axios.get(`${BACKEND_URL}/backend/createUser`);
+    
+    // all we need to do here is set the state, the effect handles the join and redirect
+    setUserRoomId({roomId: lobbyCode, userId: createUserResponse.data});
+  };
+
   async function createAndJoinRoom(){
     // disable the create button while we're loading
     setCreateButtonEnabled(false);
+    setJoinButtonEnabled(false);
     let createUserResponse = await axios.get(`${BACKEND_URL}/backend/createUser`);
     let createRoomResponse = await axios.get(`${BACKEND_URL}/backend/createRoom`);
     
@@ -48,12 +67,17 @@ function Landing() {
       <div className="row align-items-center justify-content-center m-3">
         <div className="col-3">
           <div className="input-group">
-          <input type="text" className="form-control text-nowrap" placeholder="Lobby Code" />
+          <input type="text" className="form-control text-nowrap" placeholder="Lobby Code" onChange={e => onChange(e)}/>
             <div className="input-group-btn">
-              <button type="submit" className="btn btn-dark text-nowrap form-control" style={{width: "auto"}}>Join</button>
+              <button type="submit" enabled = {joinButtonEnabled.toString()} className="btn btn-dark text-nowrap form-control" style={{width: "auto"}} onClick={ joinRoom } >Join</button>
+              {redirectToLobby && <Redirect to={{
+                pathname:`/game/${userRoomId.roomId}`, 
+                state: { userId: userRoomId.userId } // this is accessed with props.location.state.userId in the lobby component. fine to pass as a prop b/c it won't change
+                }} 
+              />}
             </div>
           </div>
-        </div>
+        </div>/
       </div>
       <div className="row text-center">
         <div className="col">
@@ -134,6 +158,7 @@ function Lobby({userId, roomId}) {
 
     socket.on("message", msg => {
       let allMessages = messages;
+      console.log(msg);
       allMessages.push(msg);
       setMessages([...allMessages]);
     });
@@ -154,7 +179,7 @@ function Lobby({userId, roomId}) {
   const onClick = () => {
     if (message !== "") {
       console.log(message)
-      socket.emit("sendMessage", {"roomId":roomId, "message":message});
+      socket.emit("sendMessage", {"roomId":roomId, "message":message, "userId":userId});
       setMessage("");
     } else {
       alert("Please Add A Message");
@@ -190,7 +215,7 @@ function Lobby({userId, roomId}) {
                   {messages.length > 0 && messages.map(msg => {
                     return (
                       <div>
-                        {msg}
+                        {msg.userId}: {msg.message}
                       </div>
                     )
                   
