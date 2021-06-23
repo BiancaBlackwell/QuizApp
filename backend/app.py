@@ -28,6 +28,8 @@ def index():
 #Handler for message recieved on 'connect' channel. Called after user has gotten id and roomid (successfully joined room)
 """ @socketio.on('connect')
 def test_connect():
+	#JoinRoom Function. 
+	#Server registers user in rooms DB and emits message that player has joined (+webpage update)
 	print("connected")
 	#add user for everyone connected to same room
 	emit('connected')
@@ -35,6 +37,7 @@ def test_connect():
 
 """ @socketio.on('identify')
 def identify(message):
+	#Teting Function
 	print('identify')
 	#client tells server what room they are in (right now, we just trust that)
 	roomId = message
@@ -51,6 +54,11 @@ def recvMessage(message):
 	emit('message', message, broadcast=True)
 	#emit('update chat', message, broadcast=True, room= roomid)
 
+"""
+@socketio.on('')
+
+
+"""
 
 
 #####~~~~~~~~~~~~~~~ Questions ~~~~~~~~~~~~~~~#####
