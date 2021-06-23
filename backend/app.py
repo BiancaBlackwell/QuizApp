@@ -33,18 +33,17 @@ def test_connect():
 	print("Socket Connected")
 
 @socketio.on('identify')
-def identify(message):
-	print(f'Identifying User... Room ID: {message}')
+def identify(data):
+	print(f'Identifying User... Room ID: {data["roomId"]}')
 	#client tells server what room they are in (right now, we just trust that)
-	roomId = message
-	join_room(roomId)
+	join_room(data["roomId"])
 	#values[message['who']] = message['data']
 	#emit('update value', message, broadcast=True)
 
 @socketio.on('sendMessage')
-def recvMessage(message):
-	roomid = message[0:8]
-	message = message[8:-1]
+def recvMessage(data):
+	roomid = data["roomId"]
+	message = data["message"]
 	print(f'Recieved Message for room "{roomid}": {message}')
 	#emit('message', message, broadcast=True)
 	emit('message', message, broadcast=True, room=roomid)

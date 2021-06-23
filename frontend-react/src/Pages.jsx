@@ -130,7 +130,7 @@ function Lobby({userId, roomId}) {
 
   useEffect(() => {
 
-    socket.emit("identify", roomId);
+    socket.emit("identify", {"roomId": roomId});
 
     socket.on("message", msg => {
       let allMessages = messages;
@@ -154,7 +154,7 @@ function Lobby({userId, roomId}) {
   const onClick = () => {
     if (message !== "") {
       console.log(message)
-      socket.emit("sendMessage", roomId+message);
+      socket.emit("sendMessage", {"roomId":roomId, "message":message});
       setMessage("");
     } else {
       alert("Please Add A Message");
