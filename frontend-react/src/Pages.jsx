@@ -129,15 +129,39 @@ function Lobby({userId, roomId}) {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    getMessages();
+    console.log("update")
   }, [messages.length]);
+
+/*
+
 
   const getMessages = () => {
     socket.on("message", msg => {
       console.log("New Message: "+msg)
       setMessages([...messages, msg]);
     });
-  };
+  };*/
+
+  useEffect(() => {
+    socket.on("message", msg => {
+      
+      console.log("New Message: "+msg);
+      console.log(messages);
+      let allMessages = messages;
+      allMessages.push(msg);
+      setMessages(allMessages);
+      onMessage()
+     //setMessages([...messages, msg]);
+      console.log(messages);
+    });
+  }, []);
+
+    // On Change
+    const onMessage = () => {
+      console.log("THE"+messages);
+      setMessages(messages);
+    };
+
 
   // On Change
   const onChange = e => {
