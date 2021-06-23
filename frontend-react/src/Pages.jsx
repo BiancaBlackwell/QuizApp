@@ -129,39 +129,21 @@ function Lobby({userId, roomId}) {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    console.log("update")
-  }, [messages.length]);
 
-/*
+    socket.emit("identify", {roomId});
 
-
-  const getMessages = () => {
     socket.on("message", msg => {
-      console.log("New Message: "+msg)
-      setMessages([...messages, msg]);
-    });
-  };*/
-
-  useEffect(() => {
-    socket.on("message", msg => {
-      
-      console.log("New Message: "+msg);
-      console.log(messages);
       let allMessages = messages;
       allMessages.push(msg);
-      setMessages(allMessages);
-      onMessage()
-     //setMessages([...messages, msg]);
-      console.log(messages);
+      setMessages([...allMessages]);
     });
+
+    socket.on("recieved", () => {
+      console.log("recieved ");
+    });
+
+    return () => { socket.close() }
   }, []);
-
-    // On Change
-    const onMessage = () => {
-      console.log("THE"+messages);
-      setMessages(messages);
-    };
-
 
   // On Change
   const onChange = e => {
@@ -172,7 +154,7 @@ function Lobby({userId, roomId}) {
   const onClick = () => {
     if (message !== "") {
       console.log(message)
-      socket.emit("sendMessage", message);
+      socket.emit("sendMessage", {roomId}+message);
       setMessage("");
     } else {
       alert("Please Add A Message");
@@ -180,7 +162,7 @@ function Lobby({userId, roomId}) {
   };
 
   
-  console.log(userId);
+  //console.log(userId);
   
   return (
 
@@ -206,11 +188,15 @@ function Lobby({userId, roomId}) {
                 <div>
                   { messages.length == 0 && <h3 className="message_placeholder">No message yet..</h3> }
 
-                  {messages.length > 0 && messages.map(msg => (
-                    <div style={{height:"25px"}}>
-                      {msg}
-                    </div>
-                  ))}
+                  {messages.length > 0 && messages.map(msg => {
+                    return (
+                      <div style={{height:"25px"}}>
+                        {msg}
+                      </div>
+                    )
+                  
+                  })
+                }
                 </div>
               </div>
 

@@ -26,26 +26,21 @@ def index():
 	return render_template('lobby.html',**values)
 
 #Handler for message recieved on 'connect' channel. Called after user has gotten id and roomid (successfully joined room)
-""" @socketio.on('connect')
+@socketio.on('connect')
 def test_connect():
-	print("connected")
-	#add user for everyone connected to same room
-	emit('connected')
-	emit('update chat', "test", broadcast=True) """
+	print("Socket Connected")
 
-""" @socketio.on('identify')
+@socketio.on('identify')
 def identify(message):
 	print('identify')
 	#client tells server what room they are in (right now, we just trust that)
 	roomId = message
-	emit('recieved')
 	#values[message['who']] = message['data']
-	#emit('update value', message, broadcast=True) """
+	#emit('update value', message, broadcast=True)
 
 @socketio.on('sendMessage')
 def recvMessage(message):
-	print('message')
-	print(message)
+	print(f'Recieved Message: {message}')
 	#roomid = message[0:7]
 	#message = message[8:-1]
 	emit('message', message, broadcast=True)
