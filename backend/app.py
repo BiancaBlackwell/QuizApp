@@ -13,6 +13,7 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'mysecret'
 app.debug = True
 app.host = 'localhost'
+
 CORS(app)
 DATABASE = 'trivia.db'
 socketio = SocketIO(app, cors_allowed_origins="*")
@@ -21,6 +22,7 @@ values = {
 	'slider1':25,
 	'slider2':0, 
 }
+
 @app.route('/')
 def index():
 	return render_template('lobby.html',**values)
@@ -32,19 +34,20 @@ def test_connect():
 
 @socketio.on('identify')
 def identify(message):
-	print('identify')
+	print(f'Identifying User... Room ID: {message}')
 	#client tells server what room they are in (right now, we just trust that)
 	roomId = message
+	join_room(roomId)
 	#values[message['who']] = message['data']
 	#emit('update value', message, broadcast=True)
 
 @socketio.on('sendMessage')
 def recvMessage(message):
-	print(f'Recieved Message: {message}')
-	#roomid = message[0:7]
-	#message = message[8:-1]
-	emit('message', message, broadcast=True)
-	#emit('update chat', message, broadcast=True, room= roomid)
+	roomid = message[0:8]
+	message = message[8:-1]
+	print(f'Recieved Message for room "{roomid}": {message}')
+	#emit('message', message, broadcast=True)
+	emit('message', message, broadcast=True, room=roomid)
 
 
 

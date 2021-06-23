@@ -130,7 +130,7 @@ function Lobby({userId, roomId}) {
 
   useEffect(() => {
 
-    socket.emit("identify", {roomId});
+    socket.emit("identify", roomId);
 
     socket.on("message", msg => {
       let allMessages = messages;
@@ -139,7 +139,7 @@ function Lobby({userId, roomId}) {
     });
 
     socket.on("recieved", () => {
-      console.log("recieved ");
+      console.log("recieved");
     });
 
     return () => { socket.close() }
@@ -154,14 +154,13 @@ function Lobby({userId, roomId}) {
   const onClick = () => {
     if (message !== "") {
       console.log(message)
-      socket.emit("sendMessage", {roomId}+message);
+      socket.emit("sendMessage", roomId+message);
       setMessage("");
     } else {
       alert("Please Add A Message");
     }
   };
 
-  
   //console.log(userId);
   
   return (
@@ -190,7 +189,7 @@ function Lobby({userId, roomId}) {
 
                   {messages.length > 0 && messages.map(msg => {
                     return (
-                      <div style={{height:"25px"}}>
+                      <div>
                         {msg}
                       </div>
                     )
