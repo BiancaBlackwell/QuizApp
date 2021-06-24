@@ -13,7 +13,7 @@ const BACKEND_URL = "http://localhost:5000"
 function Landing() {
   const [userRoomId, setUserRoomId] = useState({userId: undefined, roomId: undefined});
   const [redirectToLobby, setRedirectToLobby] = useState(false);
-  const [createButtonEnabled, setCreateButtonEnabled] = useState(true);
+  const [buttonEnabled, setButtonEnabled] = useState(true);
   const [joinButtonEnabled, setJoinButtonEnabled] = useState(true);
   const [lobbyCode, setlobbyCode] = useState("");
 
@@ -38,8 +38,7 @@ function Landing() {
 
   async function joinRoom(){
     console.log(lobbyCode)
-    setCreateButtonEnabled(false);
-    setJoinButtonEnabled(false);
+    setButtonEnabled(false);
     let createUserResponse = await axios.get(`${BACKEND_URL}/backend/createUser`);
     
     // all we need to do here is set the state, the effect handles the join and redirect
@@ -48,8 +47,7 @@ function Landing() {
 
   async function createAndJoinRoom(){
     // disable the create button while we're loading
-    setCreateButtonEnabled(false);
-    setJoinButtonEnabled(false);
+    setButtonEnabled(false);
     let createUserResponse = await axios.get(`${BACKEND_URL}/backend/createUser`);
     let createRoomResponse = await axios.get(`${BACKEND_URL}/backend/createRoom`);
     
@@ -69,19 +67,21 @@ function Landing() {
           <div className="input-group">
           <input type="text" className="form-control text-nowrap" placeholder="Lobby Code" onChange={e => onChange(e)}/>
             <div className="input-group-btn">
-              <button type="submit" enabled = {joinButtonEnabled.toString()} className="btn btn-dark text-nowrap form-control" style={{width: "auto"}} onClick={ joinRoom } >Join</button>
+              <button type="submit" enabled = {buttonEnabled.toString()} className="btn btn-dark text-nowrap form-control" style={{width: "auto"}} onClick={ joinRoom } >Join</button>
+              
               {redirectToLobby && <Redirect to={{
                 pathname:`/game/${userRoomId.roomId}`, 
                 state: { userId: userRoomId.userId } // this is accessed with props.location.state.userId in the lobby component. fine to pass as a prop b/c it won't change
                 }} 
               />}
+
             </div>
           </div>
         </div>/
       </div>
       <div className="row text-center">
         <div className="col">
-          <button type="submit" enabled = {createButtonEnabled.toString()} className="btn btn-dark text-nowrap" onClick={ createAndJoinRoom }>Create</button>
+          <button type="submit" enabled = {buttonEnabled.toString()} className="btn btn-dark text-nowrap" onClick={ createAndJoinRoom }>Create</button>
 
           {redirectToLobby && <Redirect to={{
               pathname:`/game/${userRoomId.roomId}`, 
@@ -108,6 +108,7 @@ function GameStateHandler(props) {
   // track what part of the game UI we want to display
   // this should be either lobby, game, or victory
   const [currentPage, setCurrentPage] = useState("lobby");
+  const [messages, setMessages] = useState([]);
 
   // since anyone can click this link we cannot rely on the userId prop being filled here
   const [userId, setUserId] = useState(() => {
@@ -132,33 +133,12 @@ function GameStateHandler(props) {
         }
       });
     }
-    // passing an empty array to useEffect makes it run once when the component is mounted
-  }, []);
-
-
-  return (
-    <div>
-      <div>{roomId}</div>
-      {currentPage === "lobby" && <Lobby userId = {userId} roomId = {roomId} />}
-      {currentPage === "trivia" && <Trivia userId = {userId} roomId = {roomId} />}
-      {currentPage === "victory" && <Victory userId = {userId} roomId = {roomId} />}
-    </div>
-  )
-}
-
-// can use destructuring here to be more explict abt what we pass as props
-function Lobby({userId, roomId}) {
-
-  const [messages, setMessages] = useState([]);
-  const [message, setMessage] = useState("");
-
-  useEffect(() => {
 
     socket.emit("identify", {"roomId": roomId});
 
     socket.on("message", msg => {
-      let allMessages = messages;
       console.log(msg);
+      let allMessages = messages;
       allMessages.push(msg);
       setMessages([...allMessages]);
     });
@@ -167,8 +147,25 @@ function Lobby({userId, roomId}) {
       console.log("recieved");
     });
 
-    return () => { socket.close() }
+    return () => { socket.removeAllListeners() }
+    // passing an empty array to useEffect makes it run once when the component is mounted
   }, []);
+
+
+  return (
+    <div>
+      <div>{roomId}</div>
+      {currentPage === "lobby" && <Lobby userId = {userId} roomId = {roomId} messages={messages}/>}
+      {currentPage === "trivia" && <Trivia userId = {userId} roomId = {roomId} />}
+      {currentPage === "victory" && <Victory userId = {userId} roomId = {roomId} />}
+    </div>
+  )
+}
+
+// can use destructuring here to be more explict abt what we pass as props
+function Lobby({userId, roomId, messages}) {
+
+  const [message, setMessage] = useState("");
 
   // On Change
   const onChange = e => {
@@ -178,7 +175,7 @@ function Lobby({userId, roomId}) {
   // On Click
   const onClick = () => {
     if (message !== "") {
-      console.log(message)
+      console.log(userId + ' is sending message [' + message + '] to room ' + roomId);
       socket.emit("sendMessage", {"roomId":roomId, "message":message, "userId":userId});
       setMessage("");
     } else {
