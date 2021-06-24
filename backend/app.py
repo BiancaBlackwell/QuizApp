@@ -30,10 +30,12 @@ def index():
 #Handler for message recieved on 'connect' channel. Called after user has gotten id and roomid (successfully joined room)
 @socketio.on('connect')
 def test_connect():
+	#JoinRoom function. Establish Socket Connection.
 	print("Socket Connected")
 
 @socketio.on('identify')
 def identify(data):
+	#JoinRoom function. Register userid in database with roomid, userid, socketid
 	print(f'Identifying User... Room ID: {data["roomId"]}')
 	#client tells server what room they are in (right now, we just trust that)
 	join_room(data["roomId"])
@@ -42,14 +44,50 @@ def identify(data):
 
 @socketio.on('sendMessage')
 def recvMessage(data):
+	#Chat function. Validate message sender, broadcast message to room.
 	roomid = data["roomId"]
 	message = data["message"]
 	print(f'Recieved Message for room "{roomid}": {message}')
 	#emit('message', message, broadcast=True)
 	emit('message', message, broadcast=True, room=roomid)
 
+#ROOM table = particular ROOMID table, ROOMS table = table with all rooms
+@socketio.on('readyUser')
+def readyUser(data):
+	#ReadyButton function. Update counter in Room table, check room condition, broadcast update to room.
 
+@socketio.on('unreadyUser')
+def unreadyUser(data):
+	#ReadyButton function. Update counter in Rooms table, broadcast update to room.
 
+@socketio.on('startGame')
+def startGame(data):
+	#GameState function. Validate userid as host. Broadcast update to room.
+
+@socketio.on('submitAnswer')
+def submitAnswer(data):
+	#UserGameState function. Update time recieved in list in Room table. Update answer submited in Rooms table. Check game condition (kill timer thread if met). 
+	#Emit update to user who sent you data (right/wrong), Broadcast update to room.
+
+@socketio.on('nextQuestion')
+def nextQuestion(data):
+	#GameState function. Update points in DB, Spawn new timer thread, Broadcast update to room.
+
+@socketio.on('endGame')
+def endGame(data):
+	#GameState function. Verify all questions have been served. Update scores in Room table, Broadcast update to room.
+
+@socketio.on('returnLobby')
+def returnLobby(data):
+	#GameState function. Toggle 'in game' in Room table. Emit update to user who sent you data. Check reset lobby condition.
+
+@socketio.on('disconnectUser')
+def disconnectUser(data):
+	#Disconnect function. Toggle 'connected' in Room table. Broadcast update to room.
+
+@socketio.on('reconnectUser')
+def reconnectUser(data):
+	#Disconnect function. Toggle 'connected' in Room table. Broadcast update to room
 #####~~~~~~~~~~~~~~~ Questions ~~~~~~~~~~~~~~~#####
 
 
