@@ -134,7 +134,7 @@ function GameStateHandler(props) {
       });
     }
 
-    socket.emit("identify", {"roomId": roomId});
+    socket.emit("identify", {"roomId": roomId, "userId":userId});
 
     socket.on("message", msg => {
       console.log(msg);
