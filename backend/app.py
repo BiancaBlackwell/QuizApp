@@ -27,21 +27,27 @@ values = {
 def index():
 	return render_template('lobby.html',**values)
 
+#To Do: Add try-catches for any access to data
 #Handler for message recieved on 'connect' channel. Called after user has gotten id and roomid (successfully joined room)
 @socketio.on('connect')
 def test_connect():
+	#JoinRoom function. Establish Socket Connection.
 	print("Socket Connected")
 
 @socketio.on('identify')
 def identify(data):
+	#JoinRoom function. Add socketid to the user in the Users table. Broadcast update to users.
+	roomid = data["roomId"]
+	userid = data["userId"]
+	socketid = request.sid
 	print(f'Identifying User... Room ID: {data["roomId"]}')
-	#client tells server what room they are in (right now, we just trust that)
 	join_room(data["roomId"])
 	#values[message['who']] = message['data']
 	#emit('update value', message, broadcast=True)
 
 @socketio.on('sendMessage')
 def recvMessage(data):
+	#Chat function. Validate message sender, broadcast message to room.
 	roomid = data["roomId"]
 	message = data["message"]
 	userId = data["userId"]
@@ -49,6 +55,74 @@ def recvMessage(data):
 	#emit('message', message, broadcast=True)
 	emit('message', {"message":message, "userId":userId}, broadcast=True, room=roomid)
 
+@socketio.on('nameChange')
+def nameChange(data):
+	#UserStatistic function. Update nickname in Users table. Broadcast update to room.
+	#Use first eight characters of userID for now
+	roomid = data["roomId"]
+	userid = data["userId"]
+
+@socketio.on('updateRoomSettings')
+def updateRoomSettings(data):
+	#RoomSettings function. Verify userID is host of room. Store changes in DB. Broadcast update to room.
+	#Set to default values
+	roomid = data["roomId"]
+	userid = data["userId"]
+
+@socketio.on('readyUser')
+def readyUser(data):
+	#ReadyButton function. Update counter in Rooms table, check room condition, broadcast update to room.
+	roomid = data["roomId"]
+	userid = data["userId"]
+
+@socketio.on('unreadyUser')
+def unreadyUser(data):
+	#ReadyButton function. Update counter in Rooms table, broadcast update to room.
+	roomid = data["roomId"]
+	userid = data["userId"]
+
+@socketio.on('startGame')
+def startGame(data):
+	#GameState function. Validate userid as host. Broadcast update to room.
+	roomid = data["roomId"]
+	userid = data["userId"]
+
+@socketio.on('submitAnswer')
+def submitAnswer(data):
+	#UserGameState function. Update time recieved in list in Room table. Update answer submited in Rooms table. Check game condition (kill timer thread if met). 
+	#Emit update to user who sent you data (right/wrong), Broadcast update to room.
+	roomid = data["roomId"]
+	userid = data["userId"]
+
+@socketio.on('nextQuestion')
+def nextQuestion(data):
+	#GameState function. Update points in DB, Spawn new timer thread, Broadcast update to room.
+	roomid = data["roomId"]
+	userid = data["userId"]
+
+@socketio.on('endGame')
+def endGame(data):
+	#GameState function. Verify all questions have been served. Update scores in Room table, Broadcast update to room.
+	roomid = data["roomId"]
+	userid = data["userId"]
+
+@socketio.on('returnLobby')
+def returnLobby(data):
+	#GameState function. Toggle 'in game' in Room table. Emit update to user who sent you data. Check reset lobby condition.
+	roomid = data["roomId"]
+	userid = data["userId"]
+
+@socketio.on('disconnectUser')
+def disconnectUser(data):
+	#Disconnect function. Toggle 'connected' in Room table. Broadcast update to room.
+	roomid = data["roomId"]
+	userid = data["userId"]
+
+@socketio.on('reconnectUser')
+def reconnectUser(data):
+	#Disconnect function. Toggle 'connected' in Room table. Broadcast update to room
+	roomid = data["roomId"]
+	userid = data["userId"]
 
 
 #####~~~~~~~~~~~~~~~ Questions ~~~~~~~~~~~~~~~#####
@@ -88,7 +162,7 @@ def createUser():
 	#Save it in the users table of the DB
 	db = get_db()
 	cur = db.cursor()
-	query = f'INSERT INTO users VALUES ("{userid}", null);'
+	query = f'INSERT INTO users VALUES (null,"{userid}",null,null,null);'
 	cur.execute(query)
 
 	cur.close()
