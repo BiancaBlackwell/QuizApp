@@ -40,7 +40,7 @@ def identify(data):
 	roomid = data["roomId"]
 	userid = data["userId"]
 	socketid = request.sid
-	print(f'Identifying User... Room ID: {data["roomId"]}')
+	print(f'Identifying User... Room ID: {data["roomId"]} Socket ID: {socketid}')
 	join_room(data["roomId"])
 	#values[message['who']] = message['data']
 	#emit('update value', message, broadcast=True)
