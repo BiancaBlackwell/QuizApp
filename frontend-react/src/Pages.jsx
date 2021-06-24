@@ -77,7 +77,7 @@ function Landing() {
 
             </div>
           </div>
-        </div>/
+        </div>
       </div>
       <div className="row text-center">
         <div className="col">
