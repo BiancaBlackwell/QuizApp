@@ -32,7 +32,18 @@ def index():
 @socketio.on('connect')
 def test_connect():
 	#JoinRoom function. Establish Socket Connection.
-	print("Socket Connected")
+	print(f"Socket Connected {request.sid}")
+
+
+
+#To Do: disconnect takes a minute to register on the backend once the page is closed
+#  maybe instead send a event when the component on the front end is going to be unmounted
+@socketio.on('disconnect')
+def test_disconnect():
+	#JoinRoom function. Establish Socket Connection.
+	socketid = request.sid
+	print(f"Socket Disconnected {socketid}")
+	removeUser(getUseridFromSocketid(socketid))
 
 @socketio.on('identify')
 def identify(data):
@@ -42,6 +53,7 @@ def identify(data):
 	socketid = request.sid
 	print(f'Identifying User... Room ID: {data["roomId"]}')
 	join_room(data["roomId"])
+	dbSetSocketId(userid, socketid)
 	emit('message', {"message":'Player ' + getNicknameFromUserid(userid) + ' has joined!', "userId":'server'}, broadcast=True, room=roomid)
 	emit('updatePlayers', getPlayers(roomid), broadcast=True, room=roomid)
 
@@ -304,6 +316,16 @@ def verifyRoom(roomid):
 		return True
 	return False 
 
+def verifySocketid(socketid):
+	cur = get_db().cursor()
+	query = f'SELECT COUNT(socketid) FROM users WHERE socketid = "{socketid}";'
+	cur.execute(query)
+	count = cur.fetchone()[0]
+	cur.close()
+	if count > 0:
+		return True
+	return False 
+
 def getPlayers(roomid):
 	#verify the room exists
 	if not verifyRoom(roomid):
@@ -353,6 +375,27 @@ def getNicknameFromUserid(userid):
 
 	cur = get_db().cursor()
 	query = f'SELECT nickname FROM users WHERE userid = "{userid}";'
+	cur.execute(query)
+	name = cur.fetchone()[0]
+	cur.close()
+
+	return name
+
+def dbSetSocketId(userid, socketid):
+	if not verifyUser(userid):
+		return 
+
+	cur = get_db().cursor()
+	query = f'UPDATE users SET socketid = "{socketid}" WHERE userid = "{userid}";'
+	cur.execute(query)
+	cur.close()
+	
+def getUseridFromSocketid(socketid):
+	if not verifySocketid(socketid):
+		return ""
+
+	cur = get_db().cursor()
+	query = f'SELECT userid FROM users WHERE socketid = "{socketid}";'
 	cur.execute(query)
 	name = cur.fetchone()[0]
 	cur.close()
