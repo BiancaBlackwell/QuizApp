@@ -42,17 +42,18 @@ def identify(data):
 	socketid = request.sid
 	print(f'Identifying User... Room ID: {data["roomId"]}')
 	join_room(data["roomId"])
-	emit('newPlayer', {"name":userid}, broadcast=True, room=roomid)
+	emit('message', {"message":'Player ' + getNicknameFromUserid(userid) + ' has joined!', "userId":'server'}, broadcast=True, room=roomid)
+	emit('updatePlayers', getPlayers(roomid), broadcast=True, room=roomid)
 
 @socketio.on('sendMessage')
 def recvMessage(data):
 	#Chat function. Validate message sender, broadcast message to room.
 	roomid = data["roomId"]
 	message = data["message"]
-	userId = data["userId"]
-	print(f'Recieved Message for room "{roomid}": {message} from {userId}')
+	userid = data["userId"]
+	print(f'Recieved Message for room "{roomid}": {message} from {userid}')
 	#emit('message', message, broadcast=True)
-	emit('message', {"message":message, "userId":userId}, broadcast=True, room=roomid)
+	emit('message', {"message":message, "userId":getNicknameFromUserid(userid)}, broadcast=True, room=roomid)
 
 @socketio.on('nameChange')
 def nameChange(data):
@@ -74,6 +75,12 @@ def readyUser(data):
 	roomid = data["roomId"]
 	userid = data["userId"]
 	print(f'Ready user {userid} in room {roomid}')
+	result = dbUpdateReady(userid, roomid, True)
+	print(result)
+	if result:
+		emit('start', broadcast=True, room=roomid)
+	emit('updatePlayers', getPlayers(roomid), broadcast=True, room=roomid)
+
 
 @socketio.on('unreadyUser')
 def unreadyUser(data):
@@ -81,6 +88,9 @@ def unreadyUser(data):
 	roomid = data["roomId"]
 	userid = data["userId"]
 	print(f'Unready user {userid} in room {roomid}')
+	dbUpdateReady(userid, roomid, False)
+	emit('updatePlayers', getPlayers(roomid), broadcast=True, room=roomid)
+
 
 
 @socketio.on('startGame')
@@ -119,6 +129,7 @@ def disconnectUser(data):
 	#Disconnect function. Toggle 'connected' in Room table. Broadcast update to room.
 	roomid = data["roomId"]
 	userid = data["userId"]
+	print(f'Disconnecting Player {userid} from room {roomid}')
 
 @socketio.on('reconnectUser')
 def reconnectUser(data):
@@ -164,7 +175,7 @@ def createUser():
 	#Save it in the users table of the DB
 	db = get_db()
 	cur = db.cursor()
-	query = f'INSERT INTO users VALUES (null,"{userid}",null,null,null);'
+	query = f'INSERT INTO users VALUES (null, "{userid}", null, null, "{userid[0:8]}", 0, 0);'
 	cur.execute(query)
 
 	cur.close()
@@ -200,7 +211,7 @@ def createRoom():
 	#add room to database
 	db = get_db()
 	cur = db.cursor()
-	query = f'INSERT INTO rooms VALUES ("{roomid}", 0);'
+	query = f'INSERT INTO rooms VALUES ("{roomid}", 0, 0);'
 	cur.execute(query)
 
 	# close cursor and commit change
@@ -292,6 +303,63 @@ def verifyRoom(roomid):
 	if count > 0:
 		return True
 	return False 
+
+def getPlayers(roomid):
+	#verify the room exists
+	if not verifyRoom(roomid):
+		return {}
+
+	cur = get_db().cursor()
+	query = f'SELECT nickname, isReady FROM users WHERE roomid = "{roomid}";'
+	cur.execute(query)
+
+	players = []
+	for player in cur.fetchall():
+		players.append({"name":player[0],"isReady":player[1]})
+	cur.close()
+	return players
+
+def dbUpdateReady(userid, roomid, isReady):
+	if not verifyUser(userid):
+		return
+	if not verifyRoom(roomid):
+		return
+
+	cur = get_db().cursor()
+	query = f'UPDATE users SET isReady = {1 if isReady else 0} WHERE userid = "{userid}" AND roomid = "{roomid}";'
+	cur.execute(query)
+	query = f'UPDATE rooms SET numReady = numReady {"+ 1" if isReady else "- 1"} WHERE roomid = "{roomid}";'
+	cur.execute(query)
+	cur.close()
+	return checkReady(roomid)
+
+def checkReady(roomid):
+	if not verifyRoom(roomid):
+		return
+
+	cur = get_db().cursor()
+	query = f'SELECT partysize, numReady FROM rooms WHERE roomid = "{roomid}";'
+	cur.execute(query)
+	room = cur.fetchone()
+	cur.close()
+
+	if(room[0] == room[1] + 1):
+		return True
+	return 
+	
+def getNicknameFromUserid(userid):
+	if not verifyUser(userid):
+		return ""
+
+	cur = get_db().cursor()
+	query = f'SELECT nickname FROM users WHERE userid = "{userid}";'
+	cur.execute(query)
+	name = cur.fetchone()[0]
+	cur.close()
+
+	return name
+
+
 
 def getRandomString(length):
 	letters = string.ascii_lowercase + string.ascii_uppercase

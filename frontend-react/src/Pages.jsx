@@ -36,6 +36,12 @@ function Landing() {
     setlobbyCode(e.target.value);
   };
 
+  const checkEnter = (event) => {
+    if (event.key === 'Enter') {
+      joinRoom()
+    }
+  }
+
   async function joinRoom(){
     console.log(lobbyCode)
     setButtonEnabled(false);
@@ -48,7 +54,9 @@ function Landing() {
   async function createAndJoinRoom(){
     // disable the create button while we're loading
     setButtonEnabled(false);
+    console.log('Creating User');
     let createUserResponse = await axios.get(`${BACKEND_URL}/backend/createUser`);
+    console.log('Creating Room');
     let createRoomResponse = await axios.get(`${BACKEND_URL}/backend/createRoom`);
     
     // all we need to do here is set the state, the effect handles the join and redirect
@@ -65,7 +73,7 @@ function Landing() {
       <div className="row align-items-center justify-content-center m-3">
         <div className="col-3">
           <div className="input-group">
-          <input type="text" className="form-control text-nowrap" placeholder="Lobby Code" onChange={e => onChange(e)}/>
+          <input type="text" className="form-control text-nowrap" placeholder="Lobby Code" onChange={e => onChange(e)} onKeyPress={ checkEnter } />
             <div className="input-group-btn">
               <button type="submit" enabled = {buttonEnabled.toString()} className="btn btn-dark text-nowrap form-control" style={{width: "auto"}} onClick={ joinRoom } >Join</button>
               
@@ -96,10 +104,6 @@ function Landing() {
 }
 
 function GameStateHandler(props) {
-
-
-  
-
 
   // NOTE: this component is where we'll do all the fancy webhook stuff
   // and pass the results to the children
@@ -146,44 +150,49 @@ function GameStateHandler(props) {
       setMessages([...allMessages]);
     });
 
-    socket.on("newPlayer", player => {
-      console.log('Player ' + player.name + ' joined');
+    socket.on("updatePlayers", players => {
+      console.log('Updating Players');
+      console.log(players);
 
-      let allPlayers = players;
-      allPlayers.push(player);
-      setPlayers([...allPlayers]);
-
-      let allMessages = messages;
-      allMessages.push({"message":'Player ' + player.name + 'has Joined!', "userId":'server'});
-      setMessages([...allMessages]);
+      setPlayers(players);
     });
 
+    socket.on("start", () => {
+      console.log("starting");
+    });
 
     socket.on("recieved", () => {
       console.log("recieved");
     });
 
-    return () => { socket.removeAllListeners() }
+    return () => { 
+      socket.emit("disconnectUser", {"roomId":roomId, "userId":userId});
+      socket.removeAllListeners();
+      socket.disconnect();
+    }
     // passing an empty array to useEffect makes it run once when the component is mounted
   }, []);
+
 
 
   return (
     <div>
       <div>{roomId}</div>
-      {currentPage === "lobby" && <Lobby userId = {userId} roomId = {roomId} messages={messages} players={players}/>}
+      {currentPage === "lobby" && <Lobby userId = {userId} roomId = {roomId} messages={messages} players={players} />}
       {currentPage === "trivia" && <Trivia userId = {userId} roomId = {roomId} />}
       {currentPage === "victory" && <Victory userId = {userId} roomId = {roomId} />}
     </div>
   )
 }
 
+
+
 // can use destructuring here to be more explict abt what we pass as props
 function Lobby({userId, roomId, messages, players}) {
 
   const [message, setMessage] = useState("");
   const [ready, setReady] = useState(false);
-  const [color, setColor] = useState("blue");
+  const [color, setColor] = useState({"backgroundColor":"#25274d", textColor:"#e8f9fc"});
 
   // On Change
   const onChange = e => {
@@ -206,9 +215,15 @@ function Lobby({userId, roomId, messages, players}) {
     let toggle = !ready;
     console.log('Toggling ready state to: ' + toggle);
     socket.emit(toggle?"readyUser":"unreadyUser", {"roomId":roomId, "message":message, "userId":userId});
-    setColor(toggle?"red":"blue");
+    setColor(toggle?{"backgroundColor":"#2ec949", textColor:"#212121"}:{"backgroundColor":"#25274d", textColor:"#e8f9fc"});
     setReady(toggle);
   };
+
+  const checkEnter = (event) => {
+    if (event.key === 'Enter') {
+      onClick()
+    }
+  }
 
   //console.log(userId);
   
@@ -260,13 +275,13 @@ function Lobby({userId, roomId, messages, players}) {
               </div>
 
               <div className="input-group">
-                <input type="text" className="text-nowrap form-control message" style={{fontSize: "18px", placeholder:"Message"}} value={message} name="message" onChange={e => onChange(e)} />
+                <input type="text" className="text-nowrap form-control message" style={{fontSize: "18px", placeholder:"Message"}} value={message} name="message" onChange={e => onChange(e)} onKeyPress={ checkEnter }  />
                 <button type="submit" className="btn btn-dark text-nowrap" onClick={() => onClick()}>Send</button>
               </div>
 
               <br/>
               <div style={{textAlign: "center"}}>
-                <button type="submit" className="btn btn-dark text-nowrap" onClick={() => toggleReady() } style={{backgroundColor:color}}>Ready</button>
+                <button type="submit" className="btn btn-dark text-nowrap" onClick={() => toggleReady() } style={{backgroundColor:color.backgroundColor, color:color.textColor}}>Ready</button>
               </div>
 
             </div>
@@ -407,14 +422,14 @@ function PlayerSidebar(props) {
         // so we should not expect it to always have a score
         if(player.score){
           return (
-          <div className="player card mb-2" key = {ind}>
+          <div className="player card mb-2" key = {ind} style={{backgroundColor: (player.isReady?"#2ec949":"#85c3cf") }}>
             <h5 className="card-title mb-0">{player.name}</h5>
             <p className="card-text">{player.score} pts.</p>
           </div>)
 
         } else {
           return (
-          <div className="player card mb-2" key = {ind}>
+          <div className="player card mb-2" key = {ind} style={{backgroundColor: (player.isReady?"#2ec949":"#85c3cf") }}>
             <h5 className="card-title mb-0">{player.name}</h5>
           </div>)
         }
