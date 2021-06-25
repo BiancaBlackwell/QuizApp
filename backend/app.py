@@ -42,8 +42,14 @@ def test_connect():
 def test_disconnect():
 	#JoinRoom function. Establish Socket Connection.
 	socketid = request.sid
+	userid = getUseridFromSocketid(socketid)
+	roomid = getRoomidFromSocketid(socketid)
 	print(f"Socket Disconnected {socketid}")
-	removeUser(getUseridFromSocketid(socketid))
+	emit('message', {"message":'Player ' + getNicknameFromUserid(userid) + ' has disconnected!', "userId":'server'}, broadcast=True, room=roomid)
+	removeUser(userid)
+	emit('updatePlayers', getPlayers(roomid), broadcast=True, room=roomid)
+
+
 
 @socketio.on('identify')
 def identify(data):
@@ -397,12 +403,22 @@ def getUseridFromSocketid(socketid):
 	cur = get_db().cursor()
 	query = f'SELECT userid FROM users WHERE socketid = "{socketid}";'
 	cur.execute(query)
-	name = cur.fetchone()[0]
+	userid = cur.fetchone()[0]
 	cur.close()
 
-	return name
+	return userid
 
+def getRoomidFromSocketid(socketid):
+	if not verifySocketid(socketid):
+		return ""
 
+	cur = get_db().cursor()
+	query = f'SELECT roomid FROM users WHERE socketid = "{socketid}";'
+	cur.execute(query)
+	roomid = cur.fetchone()[0]
+	cur.close()
+
+	return roomid
 
 def getRandomString(length):
 	letters = string.ascii_lowercase + string.ascii_uppercase

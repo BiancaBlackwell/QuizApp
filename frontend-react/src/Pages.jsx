@@ -142,7 +142,7 @@ function GameStateHandler(props) {
     }
 
     socket.emit("identify", {"roomId": roomId, "userId":userId});
-
+ 
     socket.on("message", msg => {
       console.log('Recieved message: [' + msg.message + '] from ' + msg.userId);
       let allMessages = messages;
@@ -192,7 +192,7 @@ function Lobby({userId, roomId, messages, players}) {
 
   const [message, setMessage] = useState("");
   const [ready, setReady] = useState(false);
-  const [color, setColor] = useState({"backgroundColor":"#25274d", textColor:"#e8f9fc"});
+  const [colors, setColor] = useState({"backgroundColor":"#464866"});
 
   // On Change
   const onChange = e => {
@@ -215,7 +215,7 @@ function Lobby({userId, roomId, messages, players}) {
     let toggle = !ready;
     console.log('Toggling ready state to: ' + toggle);
     socket.emit(toggle?"readyUser":"unreadyUser", {"roomId":roomId, "message":message, "userId":userId});
-    setColor(toggle?{"backgroundColor":"#2ec949", textColor:"#212121"}:{"backgroundColor":"#25274d", textColor:"#e8f9fc"});
+    setColor(toggle?{"backgroundColor":"#25274d"}:{"backgroundColor":"#464866"});
     setReady(toggle);
   };
 
@@ -238,7 +238,7 @@ function Lobby({userId, roomId, messages, players}) {
 
           <br/>
           <h1 className="lobby-heading text-center text-middle">Main Lobby</h1>
-          <p className="uid text-center" id="uid">1 </p>
+          <p className="uid text-center" id="uid">{userId} </p>
 
           <br/><br/><br/>
 
@@ -281,7 +281,7 @@ function Lobby({userId, roomId, messages, players}) {
 
               <br/>
               <div style={{textAlign: "center"}}>
-                <button type="submit" className="btn btn-dark text-nowrap" onClick={() => toggleReady() } style={{backgroundColor:color.backgroundColor, color:color.textColor}}>Ready</button>
+                <button type="submit" className="btn btn-dark text-nowrap" onClick={() => toggleReady() } style={{backgroundColor:colors.backgroundColor}}>Ready</button>
               </div>
 
             </div>
