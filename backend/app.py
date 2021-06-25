@@ -42,8 +42,7 @@ def identify(data):
 	socketid = request.sid
 	print(f'Identifying User... Room ID: {data["roomId"]}')
 	join_room(data["roomId"])
-	#values[message['who']] = message['data']
-	#emit('update value', message, broadcast=True)
+	emit('newPlayer', {"name":userid}, broadcast=True, room=roomid)
 
 @socketio.on('sendMessage')
 def recvMessage(data):
@@ -74,12 +73,15 @@ def readyUser(data):
 	#ReadyButton function. Update counter in Rooms table, check room condition, broadcast update to room.
 	roomid = data["roomId"]
 	userid = data["userId"]
+	print(f'Ready user {userid} in room {roomid}')
 
 @socketio.on('unreadyUser')
 def unreadyUser(data):
 	#ReadyButton function. Update counter in Rooms table, broadcast update to room.
 	roomid = data["roomId"]
 	userid = data["userId"]
+	print(f'Unready user {userid} in room {roomid}')
+
 
 @socketio.on('startGame')
 def startGame(data):

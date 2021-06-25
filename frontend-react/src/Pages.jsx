@@ -88,6 +88,7 @@ function Landing() {
               state: { userId: userRoomId.userId } // this is accessed with props.location.state.userId in the lobby component. fine to pass as a prop b/c it won't change
             }} 
           />}
+
         </div>
       </div>
     </div>
@@ -109,6 +110,7 @@ function GameStateHandler(props) {
   // this should be either lobby, game, or victory
   const [currentPage, setCurrentPage] = useState("lobby");
   const [messages, setMessages] = useState([]);
+  const [players, setPlayers] = useState([]);
 
   // since anyone can click this link we cannot rely on the userId prop being filled here
   const [userId, setUserId] = useState(() => {
@@ -126,22 +128,36 @@ function GameStateHandler(props) {
 
     if(userId === undefined){
       axios.get(`${BACKEND_URL}/backend/createUser`).then((createUserResponse) => {
-        if (createUserResponse.status === 200) {
-          setUserId(createUserResponse.data);
-        } else {
-          alert("wasn't able to create your userId, sorry!");
+        if (createUserResponse.status !== 200) {
+          alert("Wasn't able to create your userId, sorry!");
+          return;
         }
+
+        setUserId(createUserResponse.data);
       });
     }
 
     socket.emit("identify", {"roomId": roomId, "userId":userId});
 
     socket.on("message", msg => {
-      console.log(msg);
+      console.log('Recieved message: [' + msg.message + '] from ' + msg.userId);
       let allMessages = messages;
       allMessages.push(msg);
       setMessages([...allMessages]);
     });
+
+    socket.on("newPlayer", player => {
+      console.log('Player ' + player.name + ' joined');
+
+      let allPlayers = players;
+      allPlayers.push(player);
+      setPlayers([...allPlayers]);
+
+      let allMessages = messages;
+      allMessages.push({"message":'Player ' + player.name + 'has Joined!', "userId":'server'});
+      setMessages([...allMessages]);
+    });
+
 
     socket.on("recieved", () => {
       console.log("recieved");
@@ -155,7 +171,7 @@ function GameStateHandler(props) {
   return (
     <div>
       <div>{roomId}</div>
-      {currentPage === "lobby" && <Lobby userId = {userId} roomId = {roomId} messages={messages}/>}
+      {currentPage === "lobby" && <Lobby userId = {userId} roomId = {roomId} messages={messages} players={players}/>}
       {currentPage === "trivia" && <Trivia userId = {userId} roomId = {roomId} />}
       {currentPage === "victory" && <Victory userId = {userId} roomId = {roomId} />}
     </div>
@@ -163,9 +179,11 @@ function GameStateHandler(props) {
 }
 
 // can use destructuring here to be more explict abt what we pass as props
-function Lobby({userId, roomId, messages}) {
+function Lobby({userId, roomId, messages, players}) {
 
   const [message, setMessage] = useState("");
+  const [ready, setReady] = useState(false);
+  const [color, setColor] = useState("blue");
 
   // On Change
   const onChange = e => {
@@ -174,22 +192,32 @@ function Lobby({userId, roomId, messages}) {
 
   // On Click
   const onClick = () => {
-    if (message !== "") {
-      console.log(userId + ' is sending message [' + message + '] to room ' + roomId);
-      socket.emit("sendMessage", {"roomId":roomId, "message":message, "userId":userId});
-      setMessage("");
-    } else {
+    if (message === "") {
       alert("Please Add A Message");
+      return;
     }
+
+    console.log('Sending message: [' + message + '] to room ' + roomId);
+    socket.emit("sendMessage", {"roomId":roomId, "message":message, "userId":userId});
+    setMessage("");
+  };
+
+  const toggleReady = () => {
+    let toggle = !ready;
+    console.log('Toggling ready state to: ' + toggle);
+    socket.emit(toggle?"readyUser":"unreadyUser", {"roomId":roomId, "message":message, "userId":userId});
+    setColor(toggle?"red":"blue");
+    setReady(toggle);
   };
 
   //console.log(userId);
   
+
   return (
 
     <div className="coontainer-fluid">
       <div className="row">
-        <PlayerSidebar />
+        <PlayerSidebar players={players}/>
 
         <div className="col-10">
 
@@ -209,12 +237,22 @@ function Lobby({userId, roomId, messages}) {
                 <div>
                   { messages.length == 0 && <h3 className="message_placeholder">No message yet..</h3> }
 
-                  {messages.length > 0 && messages.map(msg => {
-                    return (
-                      <div>
-                        {msg.userId}: {msg.message}
+                  {messages.length > 0 && messages.map( (msg, ind) => {
+                    if(msg.userId === "server"){
+                      return (
+                        <div key={ind}>
+                          <b>{msg.message}</b>
                       </div>
-                    )
+                      )
+                    }
+                    else{
+                      return (
+                        <div key={ind}>
+                          {msg.userId}: {msg.message}
+                        </div>
+                      )
+                     
+                    }
                   
                   })
                 }
@@ -228,7 +266,7 @@ function Lobby({userId, roomId, messages}) {
 
               <br/>
               <div style={{textAlign: "center"}}>
-                <button type="submit" className="btn btn-dark text-nowrap w-25" onclick="location.href = '/trivia';">Ready</button>
+                <button type="submit" className="btn btn-dark text-nowrap" onClick={() => toggleReady() } style={{backgroundColor:color}}>Ready</button>
               </div>
 
             </div>
@@ -255,47 +293,47 @@ function Lobby({userId, roomId, messages}) {
                 <div className="col">
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckDefault">Animals</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Animals</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckChecked">Brain Teasers</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Brain Teasers</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckDefault">Celebrities</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Celebrities</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckChecked">Entertainment</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Entertainment</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckDefault">For Kids</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckDefault">For Kids</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckChecked">General</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckChecked">General</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckDefault">Geography</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Geography</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckChecked">History</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckChecked">History</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckDefault">Hobbies</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Hobbies</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckChecked">Humanities</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Humanities</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckDefault">Literature</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Literature</label>
                   </div>
 
                 </div>
@@ -303,47 +341,47 @@ function Lobby({userId, roomId, messages}) {
                 <div className="col">
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckChecked">Movies</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Movies</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckDefault">Music</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Music</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckChecked">Newest</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Newest</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckDefault">People</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckDefault">People</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckChecked">Rated</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Rated</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckDefault">Religion/Faith</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Religion/Faith</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckChecked">Science/Technology</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Science/Technology</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckDefault">Sports</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Sports</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckChecked">Television</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Television</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckDefault">Video Games</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Video Games</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckChecked">World</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckChecked">World</label>
                   </div>
                 </div>
 
@@ -551,7 +589,7 @@ function Victory() {
 
           <br/>
 
-          <button type="submit" className="btn btn-dark text-nowrap w-75"onclick="location.href = '/lobby';">Return to Lobby</button>
+          <button type="submit" className="btn btn-dark text-nowrap w-75"onClick="location.href = '/lobby';">Return to Lobby</button>
           <div className="col-xs-12" style={{height: "20px"}}></div> 
 
           <VictoryQuestions/>
