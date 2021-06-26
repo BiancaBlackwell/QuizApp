@@ -34,8 +34,6 @@ def test_connect():
 	#JoinRoom function. Establish Socket Connection.
 	print(f"Socket Connected {request.sid}")
 
-
-
 #To Do: disconnect takes a minute to register on the backend once the page is closed
 #  maybe instead send a event when the component on the front end is going to be unmounted
 @socketio.on('disconnect')
@@ -55,7 +53,21 @@ def identify(data):
 	roomid = data["roomId"]
 	userid = data["userId"]
 	socketid = request.sid
+	cur = get_db().cursor()
+
+	print(f'Checking for Host in room {roomid}')
+	query = f'SELECT hostid FROM rooms WHERE roomid = "{roomid}"'
+	cur.execute(query)
+	hostid = cur.fetchone()[0]
+	if(hostid == None):
+		print(f'No Host Found. Setting {userid} as Host.')
+		query2 = f'UPDATE rooms SET hostid = "{userid}" WHERE roomid = "{roomid}"'
+		cur.execute(query2)
+	else:
+		incrementRoom(roomid)
+
 	print(f'Identifying User... Room ID: {data["roomId"]}')
+
 	join_room(data["roomId"])
 	dbSetSocketId(userid, socketid)
 	emit('message', {"message":'Player ' + getNicknameFromUserid(userid) + ' has joined!', "userId":'server'}, broadcast=True, room=roomid)
@@ -106,8 +118,6 @@ def unreadyUser(data):
 	print(f'Unready user {userid} in room {roomid}')
 	dbUpdateReady(userid, roomid, False)
 	emit('updatePlayers', getPlayers(roomid), broadcast=True, room=roomid)
-
-
 
 @socketio.on('startGame')
 def startGame(data):
@@ -452,6 +462,11 @@ def switch_host(roomid,userid):
 		query2 = f'SELECT userid FROM users WHERE roomid = "{roomid}" LIMIT 1'
 		query3 = f'UPDATE rooms SET hostid = {query2} WHERE roomid = {roomid}'
 		cur.execute(query3)
+		
+def incrementRoom(roomid):
+	cur = get_db().cursor()
+	query = f'UPDATE rooms SET partysize = partysize + 1 WHERE roomid = "{roomid}"'
+	cur.execute(query)
 
 if __name__ == '__main__':
 	socketio.run(app)	
