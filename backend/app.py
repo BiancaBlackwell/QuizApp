@@ -49,8 +49,6 @@ def test_disconnect():
 	removeUser(userid)
 	emit('updatePlayers', getPlayers(roomid), broadcast=True, room=roomid)
 
-
-
 @socketio.on('identify')
 def identify(data):
 	#JoinRoom function. Add socketid to the user in the Users table. Broadcast update to users.
@@ -144,9 +142,25 @@ def returnLobby(data):
 
 @socketio.on('disconnectUser')
 def disconnectUser(data):
-	#Disconnect function. Toggle 'connected' in Room table. Broadcast update to room.
+	#Disconnect function. Toggle 'connected' in user table. Broadcast update to room.
 	roomid = data["roomId"]
 	userid = data["userId"]
+	deleted = 0
+
+	cur = get_db().cursor()
+	query = f'SELECT COUNT(hostid) FROM rooms WHERE hostid = "{userid}" AND roomid = "{roomid}"'
+	if(cur.execute(query)>0):
+		#Disconnected user is host
+		deleted = switch_host(roomid,userid)
+
+	if(deleted == 0):
+		#if the room still exists...
+		query1 = f'UPDATE rooms SET partysize = partysize - 1 AND numReady = numReady - 1 WHERE roomid = "{roomid}";'
+		cur.execute(query1)
+
+		query2 = f'UDPATE users SET connected = 0 AND isReady = 0 WHERE userid = "{userid}"'
+		cur.execute(query2)
+
 	print(f'Disconnecting Player {userid} from room {roomid}')
 
 @socketio.on('reconnectUser')
@@ -193,7 +207,7 @@ def createUser():
 	#Save it in the users table of the DB
 	db = get_db()
 	cur = db.cursor()
-	query = f'INSERT INTO users VALUES (null, "{userid}", null, null, "{userid[0:8]}", 0, 0);'
+	query = f'INSERT INTO users VALUES (null, "{userid}", null, null, "{userid[0:8]}", 0, 0, 0);'
 	cur.execute(query)
 
 	cur.close()
@@ -229,7 +243,7 @@ def createRoom():
 	#add room to database
 	db = get_db()
 	cur = db.cursor()
-	query = f'INSERT INTO rooms VALUES ("{roomid}", 0, 0);'
+	query = f'INSERT INTO rooms VALUES ("{roomid}", 0, 0, null);'
 	cur.execute(query)
 
 	# close cursor and commit change
@@ -425,6 +439,19 @@ def getRandomString(length):
 	result_str = ''.join(random.choice(letters) for i in range(length))
 	return result_str
 
+def switch_host(roomid,userid):
+	#Handles disconnect user when user is host
+	cur = get_db().cursor()
+	query = f'SELECT COUNT(userid) FROM users WHERE roomid = "{roomid}"'
+	if(cur.execute(query)<2):
+		#no one else to switch to. DELETE THE ROOM!
+		query1 = f'DELETE FROM rooms WHERE roomid = "{roomid}"'
+		cur.execute(query1)
+	else:
+		#switch host
+		query2 = f'SELECT userid FROM users WHERE roomid = "{roomid}" LIMIT 1'
+		query3 = f'UPDATE rooms SET hostid = {query2} WHERE roomid = {roomid}'
+		cur.execute(query3)
 
 if __name__ == '__main__':
 	socketio.run(app)	
