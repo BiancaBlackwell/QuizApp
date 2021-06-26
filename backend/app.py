@@ -101,18 +101,11 @@ def updateRoomSettings(data):
 	numquestions = data["numquestions"]
 	categories = data["categories"]
 
-	cur = get_db().cursor()
-	query = f'SELECT hostid FROM rooms WHERE roomid = "{roomid}"'
-	cur.execute(query)
-	hostid = cur.fetchone()[0]
-
-	if(userid != hostid):
-		print(f'ERROR : Invalid host. {userid} is not {hostid}')
-		return
-	else:
-		#User is host
+	if(isHost(userid,roomid)>0):
 		updateDBSettings(numquestions,categories,roomid)
 		emit('updateRoomSettings', {"numquestions":numquestionsm, "categories":categories}, broadcast=True, room=roomid)
+	else:
+		print(f'ERROR: {userid} is not host.')
 
 @socketio.on('readyUser')
 def readyUser(data):
@@ -125,7 +118,6 @@ def readyUser(data):
 	if result:
 		emit('start', broadcast=True, room=roomid)
 	emit('updatePlayers', getPlayers(roomid), broadcast=True, room=roomid)
-
 
 @socketio.on('unreadyUser')
 def unreadyUser(data):
@@ -141,6 +133,12 @@ def startGame(data):
 	#GameState function. Validate userid as host. Broadcast update to room.
 	roomid = data["roomId"]
 	userid = data["userId"]
+	if(isHost(userid,roomid)>0):
+		print(f"Starting the Game for room {roomid}")
+		changeGameState(roomid)
+		emit('getNextQuestion', broadcast=True, room=roomid)
+	else:
+		print(f"ERROR: {userid} is not host.")
 
 @socketio.on('submitAnswer')
 def submitAnswer(data):
@@ -155,6 +153,7 @@ def nextQuestion(data):
 	roomid = data["roomId"]
 	userid = data["userId"]
 
+
 @socketio.on('endGame')
 def endGame(data):
 	#GameState function. Verify all questions have been served. Update scores in Room table, Broadcast update to room.
@@ -163,7 +162,7 @@ def endGame(data):
 
 @socketio.on('returnLobby')
 def returnLobby(data):
-	#GameState function. Toggle 'in game' in Room table. Emit update to user who sent you data. Check reset lobby condition.
+	#GameState function. Toggle 'in game' in Room table. Emit update to user who sent you data. Check reset lobby condition. Reset ready status to 0
 	roomid = data["roomId"]
 	userid = data["userId"]
 
@@ -270,7 +269,7 @@ def createRoom():
 	#add room to database
 	db = get_db()
 	cur = db.cursor()
-	query = f'INSERT INTO rooms VALUES ("{roomid}", 0, 0, null, 10, "");'
+	query = f'INSERT INTO rooms VALUES ("{roomid}", 0, 0, null, 10, "",0);'
 	cur.execute(query)
 
 	# close cursor and commit change
@@ -490,6 +489,28 @@ def updateDBSettings(numquestions,categories,roomid):
 	query = f'UPDATE rooms SET numquestions = "{numquestions}" AND categories = "{categories}" WHERE roomid = "{roomid}"'
 	cur.execute(query)
 	print(f"[UPDATE] Updated settings for {roomid}")
+
+def isHost(userid,roomid):
+	cur = get_db().cursor()
+	query = f'SELECT hostid FROM rooms WHERE roomid = "{roomid}"'
+	cur.execute(query)
+	hostid = cur.fetchone()[0]
+
+	if(hostid == userid):
+		return 1
+	else:
+		return 0
+
+def changeGameState(roomid):
+	#Toggles current ingame state. 0 = not in game, 1 = in game
+	cur = get_db().cursor()
+	query = f'SELECT ingame from rooms WHERE roomid = "{roomid}"'
+	cur.execute(query)
+	ingame = cur.fetchone()[0]
+
+	ingame = abs(ingame - 1)
+	query1 = f'UPDATE rooms SET ingame = "{ingame}" WHERE roomid = "{roomid}"'
+	cur.execute(query1)
 
 if __name__ == '__main__':
 	socketio.run(app)	
