@@ -64,6 +64,7 @@ def identify(data):
 		query2 = f'UPDATE rooms SET hostid = "{userid}" WHERE roomid = "{roomid}"'
 		cur.execute(query2)
 	else:
+		#is this being incremented elsewhere?
 		incrementRoom(roomid)
 
 	print(f'Identifying User... Room ID: {data["roomId"]}')
@@ -96,6 +97,22 @@ def updateRoomSettings(data):
 	#Set to default values
 	roomid = data["roomId"]
 	userid = data["userId"]
+	#Room Settings...
+	numquestions = data["numquestions"]
+	categories = data["categories"]
+
+	cur = get_db().cursor()
+	query = f'SELECT hostid FROM rooms WHERE roomid = "{roomid}"'
+	cur.execute(query)
+	hostid = cur.fetchone()[0]
+
+	if(userid != hostid):
+		print(f'ERROR : Invalid host. {userid} is not {hostid}')
+		return
+	else:
+		#User is host
+		updateDBSettings(numquestions,categories,roomid)
+		emit('updateRoomSettings', {"numquestions":numquestionsm, "categories":categories}, broadcast=True, room=roomid)
 
 @socketio.on('readyUser')
 def readyUser(data):
@@ -253,7 +270,7 @@ def createRoom():
 	#add room to database
 	db = get_db()
 	cur = db.cursor()
-	query = f'INSERT INTO rooms VALUES ("{roomid}", 0, 0, null);'
+	query = f'INSERT INTO rooms VALUES ("{roomid}", 0, 0, null, 10, "");'
 	cur.execute(query)
 
 	# close cursor and commit change
@@ -467,6 +484,12 @@ def incrementRoom(roomid):
 	cur = get_db().cursor()
 	query = f'UPDATE rooms SET partysize = partysize + 1 WHERE roomid = "{roomid}"'
 	cur.execute(query)
+
+def updateDBSettings(numquestions,categories,roomid):
+	cur = get_db().cursor()
+	query = f'UPDATE rooms SET numquestions = "{numquestions}" AND categories = "{categories}" WHERE roomid = "{roomid}"'
+	cur.execute(query)
+	print(f"[UPDATE] Updated settings for {roomid}")
 
 if __name__ == '__main__':
 	socketio.run(app)	
