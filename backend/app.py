@@ -71,6 +71,7 @@ def identify(data):
 	emit('message', {"message":'Player ' + getNicknameFromUserid(userid) + ' has joined!', "userId":'server'}, broadcast=True, room=roomid)
 	emit('updatePlayers', getPlayers(roomid), broadcast=True, room=roomid)
 
+
 @socketio.on('sendMessage')
 def recvMessage(data):
 	#Chat function. Validate message sender, broadcast message to room.
