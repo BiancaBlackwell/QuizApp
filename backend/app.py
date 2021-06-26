@@ -34,8 +34,6 @@ def test_connect():
 	#JoinRoom function. Establish Socket Connection.
 	print(f"Socket Connected {request.sid}")
 
-
-
 #To Do: disconnect takes a minute to register on the backend once the page is closed
 #  maybe instead send a event when the component on the front end is going to be unmounted
 @socketio.on('disconnect')
@@ -52,7 +50,22 @@ def identify(data):
 	roomid = data["roomId"]
 	userid = data["userId"]
 	socketid = request.sid
+	cur = get_db().cursor()
+
+	print(f'Checking for Host in room {roomid}')
+	query = f'SELECT hostid FROM rooms WHERE roomid = "{roomid}"'
+	cur.execute(query)
+	hostid = cur.fetchone()[0]
+	if(hostid == None):
+		print(f'No Host Found. Setting {userid} as Host.')
+		query2 = f'UPDATE rooms SET hostid = "{userid}" WHERE roomid = "{roomid}"'
+		cur.execute(query2)
+	else:
+		#is this being incremented elsewhere?
+		incrementRoom(roomid)
+
 	print(f'Identifying User... Room ID: {data["roomId"]}')
+
 	join_room(data["roomId"])
 	dbSetSocketId(userid, socketid)
 	emit('message', {"message":'Player ' + getNicknameFromUserid(userid) + ' has joined!', "userId":'server'}, broadcast=True, room=roomid)
@@ -81,6 +94,15 @@ def updateRoomSettings(data):
 	#Set to default values
 	roomid = data["roomId"]
 	userid = data["userId"]
+	#Room Settings...
+	numquestions = data["numquestions"]
+	categories = data["categories"]
+
+	if(isHost(userid,roomid)>0):
+		updateDBSettings(numquestions,categories,roomid)
+		emit('updateRoomSettings', {"numquestions":numquestionsm, "categories":categories}, broadcast=True, room=roomid)
+	else:
+		print(f'ERROR: {userid} is not host.')
 
 @socketio.on('readyUser')
 def readyUser(data):
@@ -94,7 +116,6 @@ def readyUser(data):
 		emit('start', broadcast=True, room=roomid)
 	emit('updatePlayers', getPlayers(roomid), broadcast=True, room=roomid)
 
-
 @socketio.on('unreadyUser')
 def unreadyUser(data):
 	#ReadyButton function. Update counter in Rooms table, broadcast update to room.
@@ -104,13 +125,17 @@ def unreadyUser(data):
 	dbUpdateReady(userid, roomid, False)
 	emit('updatePlayers', getPlayers(roomid), broadcast=True, room=roomid)
 
-
-
 @socketio.on('startGame')
 def startGame(data):
 	#GameState function. Validate userid as host. Broadcast update to room.
 	roomid = data["roomId"]
 	userid = data["userId"]
+	if(isHost(userid,roomid)>0):
+		print(f"Starting the Game for room {roomid}")
+		changeGameState(roomid)
+		emit('getNextQuestion', broadcast=True, room=roomid)
+	else:
+		print(f"ERROR: {userid} is not host.")
 
 @socketio.on('submitAnswer')
 def submitAnswer(data):
@@ -125,6 +150,7 @@ def nextQuestion(data):
 	roomid = data["roomId"]
 	userid = data["userId"]
 
+
 @socketio.on('endGame')
 def endGame(data):
 	#GameState function. Verify all questions have been served. Update scores in Room table, Broadcast update to room.
@@ -133,7 +159,7 @@ def endGame(data):
 
 @socketio.on('returnLobby')
 def returnLobby(data):
-	#GameState function. Toggle 'in game' in Room table. Emit update to user who sent you data. Check reset lobby condition.
+	#GameState function. Toggle 'in game' in Room table. Emit update to user who sent you data. Check reset lobby condition. Reset ready status to 0
 	roomid = data["roomId"]
 	userid = data["userId"]
 
@@ -246,7 +272,7 @@ def createRoom():
 	#add room to database
 	db = get_db()
 	cur = db.cursor()
-	query = f'INSERT INTO rooms VALUES ("{roomid}", 0, 0, null);'
+	query = f'INSERT INTO rooms VALUES ("{roomid}", 0, 0, null, 10, "",0);'
 	cur.execute(query)
 
 	# close cursor and commit change
@@ -455,6 +481,39 @@ def switch_host(roomid,userid):
 		query2 = f'SELECT userid FROM users WHERE roomid = "{roomid}" LIMIT 1'
 		query3 = f'UPDATE rooms SET hostid = {query2} WHERE roomid = {roomid}'
 		cur.execute(query3)
+		
+def incrementRoom(roomid):
+	cur = get_db().cursor()
+	query = f'UPDATE rooms SET partysize = partysize + 1 WHERE roomid = "{roomid}"'
+	cur.execute(query)
+
+def updateDBSettings(numquestions,categories,roomid):
+	cur = get_db().cursor()
+	query = f'UPDATE rooms SET numquestions = "{numquestions}" AND categories = "{categories}" WHERE roomid = "{roomid}"'
+	cur.execute(query)
+	print(f"[UPDATE] Updated settings for {roomid}")
+
+def isHost(userid,roomid):
+	cur = get_db().cursor()
+	query = f'SELECT hostid FROM rooms WHERE roomid = "{roomid}"'
+	cur.execute(query)
+	hostid = cur.fetchone()[0]
+
+	if(hostid == userid):
+		return 1
+	else:
+		return 0
+
+def changeGameState(roomid):
+	#Toggles current ingame state. 0 = not in game, 1 = in game
+	cur = get_db().cursor()
+	query = f'SELECT ingame from rooms WHERE roomid = "{roomid}"'
+	cur.execute(query)
+	ingame = cur.fetchone()[0]
+
+	ingame = abs(ingame - 1)
+	query1 = f'UPDATE rooms SET ingame = "{ingame}" WHERE roomid = "{roomid}"'
+	cur.execute(query1)
 
 if __name__ == '__main__':
 	socketio.run(app)	

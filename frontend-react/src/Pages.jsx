@@ -208,6 +208,12 @@ function GameStateHandler(props) {
 
     socket.on("start", () => {
       console.log("starting");
+      socket.emit("startGame", {"roomId":roomId, "userId":userId});
+    });
+
+    socket.on("nextQuestion", () => {
+      console.log("Next Question");
+      //socket.emit("nextQuestion")
     });
 
     socket.on("recieved", () => {
