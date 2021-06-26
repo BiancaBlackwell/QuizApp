@@ -45,9 +45,6 @@ def test_disconnect():
 	userid = getUseridFromSocketid(socketid)
 	roomid = getRoomidFromSocketid(socketid)
 	print(f"Socket Disconnected {socketid}")
-	emit('message', {"message":'Player ' + getNicknameFromUserid(userid) + ' has disconnected!', "userId":'server'}, broadcast=True, room=roomid)
-	removeUser(userid)
-	emit('updatePlayers', getPlayers(roomid), broadcast=True, room=roomid)
 
 @socketio.on('identify')
 def identify(data):
@@ -145,11 +142,14 @@ def disconnectUser(data):
 	#Disconnect function. Toggle 'connected' in user table. Broadcast update to room.
 	roomid = data["roomId"]
 	userid = data["userId"]
+	print(f'Disconnecting Player {userid} from room {roomid}')
 	deleted = 0
 
 	cur = get_db().cursor()
 	query = f'SELECT COUNT(hostid) FROM rooms WHERE hostid = "{userid}" AND roomid = "{roomid}"'
-	if(cur.execute(query)>0):
+	cur.execute(query)
+	count = cur.fetchone()[0]
+	if(count>0):
 		#Disconnected user is host
 		deleted = switch_host(roomid,userid)
 
@@ -158,10 +158,13 @@ def disconnectUser(data):
 		query1 = f'UPDATE rooms SET partysize = partysize - 1 AND numReady = numReady - 1 WHERE roomid = "{roomid}";'
 		cur.execute(query1)
 
-		query2 = f'UDPATE users SET connected = 0 AND isReady = 0 WHERE userid = "{userid}"'
+		query2 = f'UPDATE users SET connected = 0 AND isReady = 0 WHERE userid = "{userid}"'
 		cur.execute(query2)
 
-	print(f'Disconnecting Player {userid} from room {roomid}')
+	emit('message', {"message":'Player ' + getNicknameFromUserid(userid) + ' has disconnected!', "userId":'server'}, broadcast=True, room=roomid)
+	removeUser(userid)
+	emit('updatePlayers', getPlayers(roomid), broadcast=True, room=roomid)
+
 
 @socketio.on('reconnectUser')
 def reconnectUser(data):

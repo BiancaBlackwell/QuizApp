@@ -3,9 +3,13 @@ import axios from "axios";
 import { Redirect, useParams } from "react-router-dom";
 import React, { useEffect, useState, useRef } from 'react';
 import socket from "./socket";
+import io from "socket.io-client";
 
 
 const BACKEND_URL = "http://localhost:5000"
+
+//const SOCKET_URL = "http://localhost:5000"
+//let socket;
 
 
 
@@ -43,10 +47,12 @@ function Landing() {
   }
 
   async function joinRoom(){
-    console.log(lobbyCode)
+    // disable the create button while we're loading
     setButtonEnabled(false);
+    console.log('Creating User');
     let createUserResponse = await axios.get(`${BACKEND_URL}/backend/createUser`);
-    
+    console.log('Joining Room' + lobbyCode);
+
     // all we need to do here is set the state, the effect handles the join and redirect
     setUserRoomId({roomId: lobbyCode, userId: createUserResponse.data});
   };
@@ -127,6 +133,44 @@ function GameStateHandler(props) {
     }
   });
 
+/*
+
+  //**************************************************
+  //should trigger when page is closed but doesn't
+  //**************************************************
+
+  useEffect(() => {
+    console.log('entering go**********');
+    return  () => {
+      window.addEventListener("beforeunload", function(e) {
+        let confirmationMessage = "o/";
+        (e || window.event).returnvalue = confirmationMessage;
+  
+        socket.emit("message", {"roomId":roomId, 'message':"outside ghs", "userId":userId});
+        socket.emit("disconnectUser", {"roomId":roomId, "userId":userId});
+        socket.removeAllListeners();
+        socket.disconnect();
+
+        return confirmationMessage;
+      });
+    }
+
+    //or
+
+    return  () => {
+      socket.emit("message", {"roomId":roomId, 'message':"inside gsh", "userId":userId});
+      socket.emit("disconnectUser", {"roomId":roomId, "userId":userId});
+      socket.removeAllListeners();
+      socket.disconnect();
+    }
+
+  });
+  
+  //**************************************************
+  //should trigger when page is closed but doesn't
+  //**************************************************  
+  */
+
   // handle creating the userId if the person came here by clicking the link
   useEffect(() => {
 
@@ -141,8 +185,13 @@ function GameStateHandler(props) {
       });
     }
 
+    //socket = io.connect(`${SOCKET_URL}`);
+
     socket.emit("identify", {"roomId": roomId, "userId":userId});
  
+
+
+
     socket.on("message", msg => {
       console.log('Recieved message: [' + msg.message + '] from ' + msg.userId);
       let allMessages = messages;
@@ -165,21 +214,81 @@ function GameStateHandler(props) {
       console.log("recieved");
     });
 
-    return () => { 
+
+
+
+
+
+
+    /*
+
+    //**************************************************
+    //should trigger when page is closed but doesn't
+    //**************************************************
+
+    return  () => {
+      window.addEventListener("beforeunload", function(e) {
+        let confirmationMessage = "o/";
+        (e || window.event).returnvalue = confirmationMessage;
+  
+        socket.emit("message", {"roomId":roomId, 'message':"inside gsh", "userId":userId});
+        socket.emit("disconnectUser", {"roomId":roomId, "userId":userId});
+        socket.removeAllListeners();
+        socket.disconnect();
+
+        return confirmationMessage;
+      });
+    }
+
+    //or
+
+    return  () => {
+      socket.emit("message", {"roomId":roomId, 'message':"inside gsh", "userId":userId});
       socket.emit("disconnectUser", {"roomId":roomId, "userId":userId});
       socket.removeAllListeners();
       socket.disconnect();
     }
+
+    //**************************************************
+    //should trigger when page is closed but doesn't
+    //**************************************************    
+
+
+    // this also doesn't work
+    window.addEventListener('beforeunload', alertUser)
+    return () => {
+      window.removeEventListener('beforeunload', alertUser)
+    }
+*/
+    window.addEventListener('beforeunload',function(e) {
+
+      socket.emit("message", {"roomId":roomId, 'message':"inside gsh", "userId":userId});
+
+    });
+
+
     // passing an empty array to useEffect makes it run once when the component is mounted
   }, []);
 
+/*
+  // this also doesn't work
+  const alertUser = e => {
+
+    socket.emit("message", {"roomId":roomId, 'message':"inside gsh", "userId":userId});
+    socket.emit("disconnectUser", {"roomId":roomId, "userId":userId});
+
+    e.preventDefault()
+    e.returnValue = ''
+  }
+
+*/
 
 
   return (
     <div>
       <div>{roomId}</div>
       {currentPage === "lobby" && <Lobby userId = {userId} roomId = {roomId} messages={messages} players={players} />}
-      {currentPage === "trivia" && <Trivia userId = {userId} roomId = {roomId} />}
+      {currentPage === "trivia" && <Trivia userId = {userId} roomId = {roomId} players={players}/>}
       {currentPage === "victory" && <Victory userId = {userId} roomId = {roomId} />}
     </div>
   )
@@ -225,8 +334,46 @@ function Lobby({userId, roomId, messages, players}) {
     }
   }
 
-  //console.log(userId);
+/*
+
+  //**************************************************
+  //should trigger when page is closed but doesn't
+  //**************************************************
+
+  useEffect(() => {
+    console.log('entering lobby**********');
+    return  () => {
+      window.addEventListener("beforeunload", function(e) {
+        let confirmationMessage = "o/";
+        (e || window.event).returnvalue = confirmationMessage;
   
+        socket.emit("message", {"roomId":roomId, 'message':"lobby", "userId":userId});
+        socket.emit("disconnectUser", {"roomId":roomId, "userId":userId});
+        socket.removeAllListeners();
+        socket.disconnect();
+
+        return confirmationMessage;
+      });
+    }
+
+    //or
+
+    return  () => {
+      socket.emit("message", {"roomId":roomId, 'message':"inside gsh", "userId":userId});
+      socket.emit("disconnectUser", {"roomId":roomId, "userId":userId});
+      socket.removeAllListeners();
+      socket.disconnect();
+    }
+  });
+
+  //**************************************************
+  //should trigger when page is closed but doesn't
+  //**************************************************
+ 
+  */  
+
+
+
 
   return (
 
@@ -438,19 +585,35 @@ function PlayerSidebar(props) {
   </div>;
 }
 
-function Trivia() {
+function Trivia({userId, roomId, players, question}) {
+
+ /* useEffect(() => {
+    return  () => {
+      window.addEventListener("beforeunload", function(e) {
+        let confirmationMessage = "o/";
+        (e || window.event).returnvalue = confirmationMessage;
+  
+        socket.emit("disconnectUser", {"roomId":roomId, "userId":userId});
+        socket.removeAllListeners();
+        socket.disconnect();
+
+        return confirmationMessage;
+      });
+    }
+  });*/
+
   return (
     <div className="coontainer-fluid">
       <div className="row">
-        <PlayerSidebar />
-        <Question />
+        <PlayerSidebar  players={players}/>
+        <Question question={question}/>
       </div>
     </div>
   )
 }
 
 function Question(props) {
-  // props.question => string and props.answers => array of string answers
+  // props.question.name => string and props.question.answers => array of string answers
   return (
     <div className="col-10 text-center">
       <br /><br />
@@ -458,7 +621,7 @@ function Question(props) {
       <div className="row">
         <div className="col-8 offset-2">
           <div className="jumbotron">
-            <p className="lead" style={{fontSize: "25pt"}}>{props.question}</p>
+            <p className="lead" style={{fontSize: "25pt"}}>{props.question.question}</p>
           </div>
         </div>
       </div>
@@ -467,7 +630,7 @@ function Question(props) {
         <div className="col"></div>
         {
           // we want two answers in this column and the other two in the other column
-          props.answers.slice(0,2).map((answer, index) => {
+          props.question.answers.slice(0,2).map((answer, index) => {
             return <div className="col-3 same-height" key = {index}>
               <button className="btn btn-primary btn-lg answer w-100 h-100">
                 {answer}
@@ -482,7 +645,7 @@ function Question(props) {
       <br />
         {
           // we want two answers in this column and the other two in the other column
-          props.answers.slice(2).map((answer, index) => {
+          props.question.answers.slice(2).map((answer, index) => {
             if(answer){
               return <div className="row">
                 <div className="col"></div>
