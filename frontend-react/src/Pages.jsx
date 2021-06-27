@@ -124,6 +124,7 @@ function GameStateHandler(props) {
   const [amHost, setAmHost] = useState(false);
   const [start, setStart] = useState(false);
   const [scores, setScores] = useState([]);
+  const [question, setQuestion] = useState({});
 
   // since anyone can click this link we cannot rely on the userId prop being filled here
   const [userId, setUserId] = useState(() => {
@@ -223,22 +224,18 @@ function GameStateHandler(props) {
 
     socket.on("trivia", () => {
       console.log("********************TRIVIA********************");
-      setCurrentPage("trivia")
-      //socket.emit("nextQuestion")
+      setCurrentPage("trivia");
+      socket.emit("nextQuestion");
     });
 
-    socket.on("getNextQuestion", () => {
-      console.log("Next Question");
-      socket.emit("nextQuestion",{"roomId":roomId});
+    socket.on("displayNextQuestion", mydict =>{
+      console.log("Displaying the Next Question");
+      setQuestion(mydict);
     });
-
-    // socket.on("returnNextQuestion", question =>{
-    //   #aaa make the question into question and answers and display
-    // };
 
     socket.on("updateScores", scores => {
       console.log("Updating Scores");
-      setScores(scores)
+      setScores(scores);
     });
 
     socket.on("recieved", () => {
@@ -322,7 +319,7 @@ function GameStateHandler(props) {
     <div>
       <div>{roomId}</div>
       {currentPage === "lobby" && <Lobby userId = {userId} roomId = {roomId} messages={messages} players={players} amHost={amHost} start={start}/>}
-      {currentPage === "trivia" && <Trivia userId = {userId} roomId = {roomId} players={players} question= { { "question":"Hello", "answers":["1", "2", "3", "4"] } }/>}
+      {currentPage === "trivia" && <Trivia userId = {userId} roomId = {roomId} players={players} question= { question }/>}
       {currentPage === "victory" && <Victory userId = {userId} roomId = {roomId} players={players} toLobby={toLobby}/>}
     </div>
   )
