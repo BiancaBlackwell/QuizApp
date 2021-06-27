@@ -553,7 +553,7 @@ def changeGameState(roomid):
 
 def storeQuestionList(questionlist,roomid):
 	#Given a question list, stores it in the DB (in both full list and nextQuestionList)
-	mylist = ' '.join([str(elem) for elem in s])
+	mylist = ' '.join([str(elem) for elem in questionlist])
 	cur = get_db().cursor()
 	query = f'UPDATE rooms SET questionlist = "{mylist}" AND nextquestionlist = "{mylist}" WHERE roomid = "{roomid}"'
 	cur.execute(query)
@@ -568,15 +568,14 @@ def storeNextQuestionList(mylist,roomid):
 def fetchQuestions(roomid, userid):
 	#Fetch Questions
 	count = getNumQuestions(roomid)
-	questionlist = []
+	questionlist = list()
 
 	print(f"Starting the Game for room {roomid}")
 	changeGameState(roomid)
 	print(f"Fetching questions for Room {roomid}")
 	for i in range(count):
 		newquestion = getQuestion()
-		print(newquestion)
-		questionlist = questionlist.append(newquestion)
+		questionlist.append(newquestion)
 	storeQuestionList(questionlist,roomid)
 
 def getQuestionDetails(nextquestionid):

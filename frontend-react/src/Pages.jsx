@@ -123,7 +123,6 @@ function GameStateHandler(props) {
   const [players, setPlayers] = useState([]);
   const [amHost, setAmHost] = useState(false);
   const [start, setStart] = useState(false);
-  const [question, setQuestion] = useState({});
   const [scores, setScores] = useState([]);
   const [question, setQuestion] = useState({});
 
@@ -231,10 +230,10 @@ function GameStateHandler(props) {
 
     socket.on("displayNextQuestion", mydict =>{
       console.log("Displaying the Next Question");
+      console.log(mydict);
       setQuestion(mydict);
     });
 
-<<<<<<< HEAD
     socket.on("returnNextQuestion", question => {
       console.log("Recieved Question: " + question.question);
       setQuestion(question);
@@ -244,8 +243,6 @@ function GameStateHandler(props) {
     //   #aaa make the question into question and answers and display
     // };
 
-=======
->>>>>>> 9342ca037bd741e9cdcb9e605903ba745477bff5
     socket.on("updateScores", scores => {
       console.log("Updating Scores");
       setScores(scores);
@@ -443,7 +440,7 @@ function Lobby({userId, roomId, messages, players, amHost, start}) {
 
               <div className="row message_holder" style={{textAlign: "left"}}>
                 <div>
-                  { messages.length == 0 && <h3 className="message_placeholder">No message yet..</h3> }
+                  { messages.length === 0 && <h3 className="message_placeholder">No message yet..</h3> }
 
                   {messages.length > 0 && messages.map( (msg, ind) => {
                     if(msg.userId === "server"){
@@ -663,7 +660,7 @@ function Question(props) {
 
   const submitAnswer = choice => {
 
-    console.log('answer: '+answered+' | '+choice);
+    console.log('answer: '+choice);
     socket.emit("submitAnswer", {"roomId":props.roomId, "userId":props.userId, "answer":choice});
   };
 
