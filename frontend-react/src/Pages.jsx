@@ -121,12 +121,9 @@ function GameStateHandler(props) {
   const [currentPage, setCurrentPage] = useState("lobby");
   const [messages, setMessages] = useState([]);
   const [players, setPlayers] = useState([]);
-<<<<<<< HEAD
   const [amHost, setAmHost] = useState(false);
   const [start, setStart] = useState(false);
-=======
   const [scores, setScores] = useState([]);
->>>>>>> d943beac7208fc1cb4435838253b319211fd7456
 
   // since anyone can click this link we cannot rely on the userId prop being filled here
   const [userId, setUserId] = useState(() => {
@@ -240,9 +237,9 @@ function GameStateHandler(props) {
     // };
 
     socket.on("updateScores", scores => {
-      consolve.log("Updating Scores");
+      console.log("Updating Scores");
       setScores(scores)
-    };
+    });
 
     socket.on("recieved", () => {
       console.log("recieved");
@@ -270,7 +267,6 @@ function GameStateHandler(props) {
         socket.emit("disconnectUser", {"roomId":roomId, "userId":userId});
         socket.removeAllListeners();
         socket.disconnect();
-
         return confirmationMessage;
       });
     }
@@ -652,6 +648,22 @@ function Trivia({userId, roomId, players, question}) {
 
 function Question(props) {
   // props.question.name => string and props.question.answers => array of string answers
+
+  const submitAnswer = (row, col) => {
+
+    console.log(row +" "+col);
+ /*   if (message === "") {
+      alert("Please Add A Message");
+      return;
+    }
+
+    console.log('Sending message: [' + message + '] to room ' + roomId);
+    socket.emit("sendMessage", {"roomId":roomId, "message":message, "userId":userId});
+    setMessage("");*/
+  };
+
+
+
   return (
     <div className="col-10 text-center">
       <br /><br />
@@ -669,11 +681,7 @@ function Question(props) {
         {
           // we want two answers in this column and the other two in the other column
           props.question.answers.slice(0,2).map((answer, index) => {
-            return <div className="col-3 same-height" key = {index}>
-              <button className="btn btn-primary btn-lg answer w-100 h-100">
-                {answer}
-              </button>
-            </div>
+            return <AnswerButton key={index} answer={answer} submitAnswer={submitAnswer} row={0} col={index}/>
           })
         }
 
@@ -686,21 +694,29 @@ function Question(props) {
             {
               // we want two answers in this column and the other two in the other column
               props.question.answers.slice(2).map((answer, index) => {
-                if(answer){
-                  return (
-                      <div className="col-3 same-height" key={index}>
-                        <button className="btn btn-primary btn-lg answer w-100 h-100">
-                          {answer}
-                        </button>
-                      </div>
-                      )
-                  }
+                return <AnswerButton key={index} answer={answer} submitAnswer={submitAnswer} row={1} col={index}/>
               })
             }
           <div className="col"></div>
       </div>
    </div>
   )
+}
+
+
+function AnswerButton(props){
+
+  const handleClick = () => {
+    props.submitAnswer(props.row, props.col);
+  }
+
+  return (
+    <div className="col-3 same-height">
+      <button className="btn btn-primary btn-lg answer w-100 h-100" onClick={ handleClick }>
+        {props.answer}
+      </button>
+    </div>
+    )
 }
 
 function VictoryQuestions(props) {
@@ -818,4 +834,7 @@ function Victory() {
   </div>  
 )
 }
-export { Landing, Trivia, Lobby, PlayerSidebar, Victory, Question, GameStateHandler };
+
+
+
+export { Landing, Trivia, Lobby, PlayerSidebar, Victory, Question, GameStateHandler, AnswerButton};
