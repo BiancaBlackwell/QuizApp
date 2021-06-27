@@ -158,6 +158,8 @@ def submitAnswer(data):
 	#Emit update to user who sent you data (right/wrong), Update Points, Broadcast update to room.
 	roomid = data["roomId"]
 	userid = data["userId"]
+	answerChoice = data["answer"]
+	print(f'Recieved answer {answerChoice} from [{userid} in room {roomid}]')
 
 @socketio.on('nextQuestion')
 def nextQuestion(data):
@@ -368,6 +370,7 @@ def getFromComplete(id, cur):
 	for row in cur.execute('SELECT * FROM complete WHERE id = ' + str(id)):
 		cur.close()
 		return str(row)
+		
 
 def verifyUser(userid):
 	cur = get_db().cursor()
@@ -399,18 +402,21 @@ def verifySocketid(socketid):
 		return True
 	return False 
 
-def getPlayers(roomid):
+def getPlayers(roomid, scores=False):
 	#verify the room exists
 	if not verifyRoom(roomid):
 		return {}
 
 	cur = get_db().cursor()
-	query = f'SELECT nickname, isReady FROM users WHERE roomid = "{roomid}";'
+	query = f'SELECT nickname, isReady, score FROM users WHERE roomid = "{roomid}";'
 	cur.execute(query)
 
 	players = []
 	for player in cur.fetchall():
-		players.append({"name":player[0],"isReady":player[1]})
+		if scores:
+			players.append({"name":player[0],"isReady":player[1], "score":player[2]})
+		else:
+			players.append({"name":player[0],"isReady":player[1]})
 	cur.close()
 	return players
 

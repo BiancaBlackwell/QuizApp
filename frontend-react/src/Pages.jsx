@@ -123,6 +123,7 @@ function GameStateHandler(props) {
   const [players, setPlayers] = useState([]);
   const [amHost, setAmHost] = useState(false);
   const [start, setStart] = useState(false);
+  const [question, setQuestion] = useState({});
   const [scores, setScores] = useState([]);
 
   // since anyone can click this link we cannot rely on the userId prop being filled here
@@ -232,6 +233,11 @@ function GameStateHandler(props) {
       socket.emit("nextQuestion",{"roomId":roomId});
     });
 
+    socket.on("returnNextQuestion", question => {
+      console.log("Recieved Question: " + question.question);
+      setQuestion(question);
+    });
+
     // socket.on("returnNextQuestion", question =>{
     //   #aaa make the question into question and answers and display
     // };
@@ -322,7 +328,7 @@ function GameStateHandler(props) {
     <div>
       <div>{roomId}</div>
       {currentPage === "lobby" && <Lobby userId = {userId} roomId = {roomId} messages={messages} players={players} amHost={amHost} start={start}/>}
-      {currentPage === "trivia" && <Trivia userId = {userId} roomId = {roomId} players={players} question= { { "question":"Hello", "answers":["1", "2", "3", "4"] } }/>}
+      {currentPage === "trivia" && <Trivia userId = {userId} roomId = {roomId} players={players} question= { question }/>}
       {currentPage === "victory" && <Victory userId = {userId} roomId = {roomId} players={players} toLobby={toLobby}/>}
     </div>
   )
@@ -353,8 +359,6 @@ function Lobby({userId, roomId, messages, players, amHost, start}) {
     socket.emit("sendMessage", {"roomId":roomId, "message":message, "userId":userId});
     setMessage("");
   };
-
-  console.log(amHost + " | "+ start);
 
   const toggleReady = () => {
     if(!amHost || (amHost && start)){
@@ -644,7 +648,7 @@ function Trivia({userId, roomId, players, question}) {
     <div className="coontainer-fluid">
       <div className="row">
         <PlayerSidebar  players={players}/>
-        <Question question={question}/>
+        <Question userId={userId} roomId={roomId} question={question}/>
       </div>
     </div>
   )
@@ -655,14 +659,9 @@ function Question(props) {
 
   const submitAnswer = choice => {
 
-    console.log(choice);
-
-    /*   
-    socket.emit("sendMessage", {"roomId":roomId, "message":message, "userId":userId});
-*/
+    console.log('answer: '+answered+' | '+choice);
+    socket.emit("submitAnswer", {"roomId":props.roomId, "userId":props.userId, "answer":choice});
   };
-
-
 
   return (
     <div className="col-10 text-center">
