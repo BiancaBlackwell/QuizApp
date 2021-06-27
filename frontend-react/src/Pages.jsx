@@ -314,12 +314,16 @@ function GameStateHandler(props) {
 */
 
 
+  const toLobby = () => {
+    setCurrentPage('lobby');
+  }
+
   return (
     <div>
       <div>{roomId}</div>
       {currentPage === "lobby" && <Lobby userId = {userId} roomId = {roomId} messages={messages} players={players} amHost={amHost} start={start}/>}
       {currentPage === "trivia" && <Trivia userId = {userId} roomId = {roomId} players={players} question= { { "question":"Hello", "answers":["1", "2", "3", "4"] } }/>}
-      {currentPage === "victory" && <Victory userId = {userId} roomId = {roomId} />}
+      {currentPage === "victory" && <Victory userId = {userId} roomId = {roomId} players={players} toLobby={toLobby}/>}
     </div>
   )
 }
@@ -649,17 +653,13 @@ function Trivia({userId, roomId, players, question}) {
 function Question(props) {
   // props.question.name => string and props.question.answers => array of string answers
 
-  const submitAnswer = (row, col) => {
+  const submitAnswer = choice => {
 
-    console.log(row +" "+col);
- /*   if (message === "") {
-      alert("Please Add A Message");
-      return;
-    }
+    console.log(choice);
 
-    console.log('Sending message: [' + message + '] to room ' + roomId);
+    /*   
     socket.emit("sendMessage", {"roomId":roomId, "message":message, "userId":userId});
-    setMessage("");*/
+*/
   };
 
 
@@ -706,8 +706,9 @@ function Question(props) {
 
 function AnswerButton(props){
 
+  const map = [[0,1],[2,3]];
   const handleClick = () => {
-    props.submitAnswer(props.row, props.col);
+    props.submitAnswer(map[props.row][props.col]);
   }
 
   return (
@@ -762,20 +763,28 @@ function VictoryQuestions(props) {
 }
 
 
-function Victory() {
+function Victory({players, toLobby}) {
+
+  const handleClick = () => {
+    toLobby();
+  }
+
   return (
   <div className="coontainer-fluid">
 
     <div className="row">
 
-      <PlayerSidebar/>
+      <PlayerSidebar players={players}/>
 
       <div className="col-10 text-center">
 
         <h1 className="display-3" style={{color: "#212121"}}><strong>Final Scores</strong></h1>
 
         <div className="col-xs-12" style={{height: "20px"}}>
-
+            <VictoryPodium maxScore={89} topPlayers={[{"name":"Abe Abbleton", "score":57}, {"name":"Bob Bobbington", "score":89}, {"name":"Bubbles", "score":50}]}/>
+          
+          
+          {/*
           <div className="row">
 
             <div className="row">
@@ -820,19 +829,61 @@ function Victory() {
               </div>                                         
             </div>
           </div>
+          */}
+
 
           <br/>
 
-          <button type="submit" className="btn btn-dark text-nowrap w-75"onClick="location.href = '/lobby';">Return to Lobby</button>
+          <button type="submit" className="btn btn-dark text-nowrap w-75"onClick={ handleClick }>Return to Lobby</button>
           <div className="col-xs-12" style={{height: "20px"}}></div> 
 
-          <VictoryQuestions/>
+          <VictoryQuestions questions = {[{ question: 'underwear?', correct_answer: 0, answers:["yes", "no"]}, { question: 'underwear?', correct_answer: 3, answers:["yes", "no", "hell no", "hell yeah"]}]}/>
 
         </div>
       </div>
     </div>  
   </div>  
 )
+}
+
+function VictoryPodium(props){
+
+  console.log()
+
+  return (
+    <div className="row">
+
+    <div className="row">
+      { props.topPlayers && props.topPlayers.map((player, ind) => {
+        return(
+          <div className="col align-self-end" key={ind}>
+          <div className="card player">
+            <div className="col-xs-12" style={{height: Math.round(player.score / props.maxScore * 100)+"px"}}></div>
+            <h5 className="card-title mb-0">{player.name}</h5>
+            <p className="card-text">{player.score} pts.</p>
+          </div>
+        </div>
+        )})
+      }
+    </div>
+
+    <div className = "row">
+
+      <div className="col">
+        <h5>2</h5>
+      </div>
+
+      <div className="col">
+        <h5>1</h5>
+      </div>
+
+      <div className="col">
+        <h5>3</h5>
+      </div>                                         
+    </div>
+  </div>
+)
+
 }
 
 
