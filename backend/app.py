@@ -52,6 +52,13 @@ def identify(data):
 	socketid = request.sid
 	cur = get_db().cursor()
 
+	print(f'Identifying User... Room ID: {data["roomId"]}')
+
+	join_room(data["roomId"])
+	dbSetSocketId(userid, socketid)
+	emit('message', {"message":'Player ' + getNicknameFromUserid(userid) + ' has joined!', "userId":'server'}, broadcast=True, room=roomid)
+	emit('updatePlayers', getPlayers(roomid), broadcast=True, room=roomid)
+
 	print(f'Checking for Host in room {roomid}')
 	query = f'SELECT hostid FROM rooms WHERE roomid = "{roomid}"'
 	cur.execute(query)
@@ -60,16 +67,12 @@ def identify(data):
 		print(f'No Host Found. Setting {userid} as Host.')
 		query2 = f'UPDATE rooms SET hostid = "{userid}" WHERE roomid = "{roomid}"'
 		cur.execute(query2)
+		print(f'New Host')
+		emit('newHost', {"userId":userid}, broadcast=True, room=roomid)
+		emit('start', broadcast=True, room=roomid)
 	else:
-		#is this being incremented elsewhere?
-		incrementRoom(roomid)
+		emit('unstart', broadcast=True, room=roomid)
 
-	print(f'Identifying User... Room ID: {data["roomId"]}')
-
-	join_room(data["roomId"])
-	dbSetSocketId(userid, socketid)
-	emit('message', {"message":'Player ' + getNicknameFromUserid(userid) + ' has joined!', "userId":'server'}, broadcast=True, room=roomid)
-	emit('updatePlayers', getPlayers(roomid), broadcast=True, room=roomid)
 
 
 @socketio.on('sendMessage')
@@ -101,7 +104,7 @@ def updateRoomSettings(data):
 
 	if(isHost(userid,roomid)>0):
 		updateDBSettings(numquestions,categories,roomid)
-		emit('updateRoomSettings', {"numquestions":numquestionsm, "categories":categories}, broadcast=True, room=roomid)
+		emit('updateRoomSettings', {"numquestions":numquestions, "categories":categories}, broadcast=True, room=roomid)
 	else:
 		print(f'ERROR: {userid} is not host.')
 
@@ -113,8 +116,11 @@ def readyUser(data):
 	print(f'Ready user {userid} in room {roomid}')
 	result = dbUpdateReady(userid, roomid, True)
 	print(result)
-	if result:
+	if result == 1:
 		emit('start', broadcast=True, room=roomid)
+	if(result == 2):
+		dbResetReady(roomid)
+		emit("trivia", broadcast=True, room=roomid)
 	emit('updatePlayers', getPlayers(roomid), broadcast=True, room=roomid)
 
 @socketio.on('unreadyUser')
@@ -124,6 +130,7 @@ def unreadyUser(data):
 	userid = data["userId"]
 	print(f'Unready user {userid} in room {roomid}')
 	dbUpdateReady(userid, roomid, False)
+	emit('unstart', broadcast=True, room=roomid)
 	emit('updatePlayers', getPlayers(roomid), broadcast=True, room=roomid)
 
 @socketio.on('startGame')
@@ -178,7 +185,7 @@ def disconnectUser(data):
 	count = cur.fetchone()[0]
 	if(count>0):
 		#Disconnected user is host
-		deleted = switch_host(roomid,userid)
+		deleted = switch_host(roomid)
 
 	if(deleted == 0):
 		#if the room still exists...
@@ -415,9 +422,23 @@ def checkReady(roomid):
 	room = cur.fetchone()
 	cur.close()
 
+	print(room)
+
+	if(room[0] == room[1]):
+		return 2
 	if(room[0] == room[1] + 1):
-		return True
-	return 
+		return 1
+	return 0
+
+def dbResetReady(roomid):
+	if not verifyRoom(roomid):
+		return
+
+	cur = get_db().cursor()
+	query = f'UPDATE users SET isReady = 0 WHERE roomid = "{roomid}";'
+	cur.execute(query)
+	cur.close()
+
 	
 def getNicknameFromUserid(userid):
 	if not verifyUser(userid):
@@ -469,19 +490,25 @@ def getRandomString(length):
 	result_str = ''.join(random.choice(letters) for i in range(length))
 	return result_str
 
-def switch_host(roomid,userid):
+def switch_host(roomid):
 	#Handles disconnect user when user is host
 	cur = get_db().cursor()
 	query = f'SELECT COUNT(userid) FROM users WHERE roomid = "{roomid}"'
-	if(cur.execute(query)<2):
+	cur.execute(query)
+	count = cur.fetchone()[0]
+	if(count<2):
 		#no one else to switch to. DELETE THE ROOM!
-		query1 = f'DELETE FROM rooms WHERE roomid = "{roomid}"'
-		cur.execute(query1)
+		removeRoom(roomid)
 	else:
 		#switch host
 		query2 = f'SELECT userid FROM users WHERE roomid = "{roomid}" LIMIT 1'
-		query3 = f'UPDATE rooms SET hostid = {query2} WHERE roomid = {roomid}'
+		cur.execute(query2)
+		nextHost = cur.fetchone()[0]
+		query3 = f'UPDATE rooms SET hostid = {nextHost} WHERE roomid = {roomid}'
 		cur.execute(query3)
+	emit('newHost', {"userId":nextHost}, broadcast=True, room=roomid)
+	emit('message', {"message":'Player ' + getNicknameFromUserid(nextHost) + ' is now Host!', "userId":'server'}, broadcast=True, room=roomid)
+
 		
 def incrementRoom(roomid):
 	cur = get_db().cursor()

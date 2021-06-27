@@ -121,6 +121,8 @@ function GameStateHandler(props) {
   const [currentPage, setCurrentPage] = useState("lobby");
   const [messages, setMessages] = useState([]);
   const [players, setPlayers] = useState([]);
+  const [amHost, setAmHost] = useState(false);
+  const [start, setStart] = useState(false);
 
   // since anyone can click this link we cannot rely on the userId prop being filled here
   const [userId, setUserId] = useState(() => {
@@ -187,11 +189,6 @@ function GameStateHandler(props) {
 
     //socket = io.connect(`${SOCKET_URL}`);
 
-    socket.emit("identify", {"roomId": roomId, "userId":userId});
- 
-
-
-
     socket.on("message", msg => {
       console.log('Recieved message: [' + msg.message + '] from ' + msg.userId);
       let allMessages = messages;
@@ -208,7 +205,25 @@ function GameStateHandler(props) {
 
     socket.on("start", () => {
       console.log("starting");
-      socket.emit("startGame", {"roomId":roomId, "userId":userId});
+      setStart(true);
+      //socket.emit("startGame", {"roomId":roomId, "userId":userId});
+    });
+    socket.on("unstart", () => {
+      console.log("unstart");
+      setStart(false);
+      //socket.emit("startGame", {"roomId":roomId, "userId":userId});
+    });
+
+    socket.on("newHost", host => {
+      console.log("New Host is " + host.userId);
+      if(userId === host.userId)
+        setAmHost(true);
+    });
+
+    socket.on("trivia", () => {
+      console.log("********************TRIVIA********************");
+      setCurrentPage("trivia")
+      //socket.emit("nextQuestion")
     });
 
     socket.on("nextQuestion", () => {
@@ -223,6 +238,7 @@ function GameStateHandler(props) {
 
 
 
+    socket.emit("identify", {"roomId": roomId, "userId":userId});
 
 
 
@@ -264,15 +280,14 @@ function GameStateHandler(props) {
     window.addEventListener('beforeunload', alertUser)
     return () => {
       window.removeEventListener('beforeunload', alertUser)
-    }
-*/
+    
     window.addEventListener('beforeunload',function(e) {
 
       socket.emit("message", {"roomId":roomId, 'message':"inside gsh", "userId":userId});
 
     });
 
-
+*/
     // passing an empty array to useEffect makes it run once when the component is mounted
   }, []);
 
@@ -293,8 +308,8 @@ function GameStateHandler(props) {
   return (
     <div>
       <div>{roomId}</div>
-      {currentPage === "lobby" && <Lobby userId = {userId} roomId = {roomId} messages={messages} players={players} />}
-      {currentPage === "trivia" && <Trivia userId = {userId} roomId = {roomId} players={players}/>}
+      {currentPage === "lobby" && <Lobby userId = {userId} roomId = {roomId} messages={messages} players={players} amHost={amHost} start={start}/>}
+      {currentPage === "trivia" && <Trivia userId = {userId} roomId = {roomId} players={players} question= { { "question":"Hello", "answers":["1", "2", "3", "4"] } }/>}
       {currentPage === "victory" && <Victory userId = {userId} roomId = {roomId} />}
     </div>
   )
@@ -303,7 +318,7 @@ function GameStateHandler(props) {
 
 
 // can use destructuring here to be more explict abt what we pass as props
-function Lobby({userId, roomId, messages, players}) {
+function Lobby({userId, roomId, messages, players, amHost, start}) {
 
   const [message, setMessage] = useState("");
   const [ready, setReady] = useState(false);
@@ -326,12 +341,16 @@ function Lobby({userId, roomId, messages, players}) {
     setMessage("");
   };
 
+  console.log(amHost + " | "+ start);
+
   const toggleReady = () => {
-    let toggle = !ready;
-    console.log('Toggling ready state to: ' + toggle);
-    socket.emit(toggle?"readyUser":"unreadyUser", {"roomId":roomId, "message":message, "userId":userId});
-    setColor(toggle?{"backgroundColor":"#25274d"}:{"backgroundColor":"#464866"});
-    setReady(toggle);
+    if(!amHost || (amHost && start)){
+      let toggle = !ready;
+      console.log('Toggling ready state to: ' + toggle);
+      socket.emit(toggle?"readyUser":"unreadyUser", {"roomId":roomId, "message":message, "userId":userId});
+      setColor(toggle?{"backgroundColor":"#25274d"}:{"backgroundColor":"#464866"});
+      setReady(toggle);
+    }
   };
 
   const checkEnter = (event) => {
@@ -391,7 +410,7 @@ function Lobby({userId, roomId, messages, players}) {
 
           <br/>
           <h1 className="lobby-heading text-center text-middle">Main Lobby</h1>
-          <p className="uid text-center" id="uid">{userId} </p>
+          <p className="uid text-center" id="uid">{userId} {amHost?"*****":""} </p>
 
           <br/><br/><br/>
 
@@ -434,7 +453,7 @@ function Lobby({userId, roomId, messages, players}) {
 
               <br/>
               <div style={{textAlign: "center"}}>
-                <button type="submit" className="btn btn-dark text-nowrap" onClick={() => toggleReady() } style={{backgroundColor:colors.backgroundColor}}>Ready</button>
+                <button type="submit" className="btn btn-dark text-nowrap" onClick={() => toggleReady() } style={{backgroundColor:colors.backgroundColor}}>{amHost?'Start':'Ready'}</button>
               </div>
 
             </div>
@@ -649,23 +668,25 @@ function Question(props) {
       </div>
 
       <br />
-        {
-          // we want two answers in this column and the other two in the other column
-          props.question.answers.slice(2).map((answer, index) => {
-            if(answer){
-              return <div className="row">
-                <div className="col"></div>
-                  <div className="col-3 same-height" key={index}>
-                    <button className="btn btn-primary btn-lg answer w-100 h-100">
-                      {answer}
-                    </button>
-                  </div>
-                <div className="col"></div>
-              </div>
+      <div className="row">
+        <div className="col"></div>
+            {
+              // we want two answers in this column and the other two in the other column
+              props.question.answers.slice(2).map((answer, index) => {
+                if(answer){
+                  return (
+                      <div className="col-3 same-height" key={index}>
+                        <button className="btn btn-primary btn-lg answer w-100 h-100">
+                          {answer}
+                        </button>
+                      </div>
+                      )
+                  }
+              })
             }
-          })
-        }
-    </div>
+          <div className="col"></div>
+      </div>
+   </div>
   )
 }
 
