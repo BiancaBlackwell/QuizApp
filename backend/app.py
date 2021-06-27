@@ -138,9 +138,16 @@ def startGame(data):
 	#GameState function. Validate userid as host. Broadcast update to room.
 	roomid = data["roomId"]
 	userid = data["userId"]
+	count = getNumQuestions(roomid)
+	questionlist = []
 	if(isHost(userid,roomid)>0):
 		print(f"Starting the Game for room {roomid}")
 		changeGameState(roomid)
+		print(f"Fetching questions for Room {roomid}")
+		for i in range(count):
+			newquestion = getQuestion()
+			questionlist = questionlist.append(newquestion)
+		storeQuestionList(questionlist,roomid)
 		emit('getNextQuestion', broadcast=True, room=roomid)
 	else:
 		print(f"ERROR: {userid} is not host.")
@@ -148,16 +155,25 @@ def startGame(data):
 @socketio.on('submitAnswer')
 def submitAnswer(data):
 	#UserGameState function. Update time recieved in list in Room table. Update answer submited in Rooms table. Check game condition (kill timer thread if met). 
-	#Emit update to user who sent you data (right/wrong), Broadcast update to room.
+	#Emit update to user who sent you data (right/wrong), Update Points, Broadcast update to room.
 	roomid = data["roomId"]
 	userid = data["userId"]
 
 @socketio.on('nextQuestion')
 def nextQuestion(data):
-	#GameState function. Update points in DB, Spawn new timer thread, Broadcast update to room.
+	#GameState function. Spawn new timer thread, Broadcast update to room.
+	print("Getting next question")
 	roomid = data["roomId"]
-	userid = data["userId"]
-
+	nextquestionlist = data["nextquestionlist"]
+	#no timer for now
+	mylist = list(nextquestionlist.split(" "))
+	if(len(mylist) == 0):
+		print("ERROR: No more questions to serve")
+		return
+	nextquestion = mylist[0]
+	mylist = mylist.pop(0)
+	storeNextQuestionList(mylist,roomid)
+	emit('returnNextQuestion',{nextquestion}, broadcast=True, room=roomid)
 
 @socketio.on('endGame')
 def endGame(data):
@@ -214,8 +230,8 @@ def reconnectUser(data):
 def getQuestion():
 	size = 0
 	cur = get_db().cursor()
-	for row in cur.execute('SELECT COUNT(id) FROM complete'):
-		size = row[0]
+	cur.execute('SELECT COUNT(id) FROM complete')
+	size = cur.fetchone()[0]
 	return getFromComplete(random.randint(1, size-1), cur)
 
 @app.route('/backend/getQuestion/<category>')
@@ -244,7 +260,7 @@ def createUser():
 	#Save it in the users table of the DB
 	db = get_db()
 	cur = db.cursor()
-	query = f'INSERT INTO users VALUES (null, "{userid}", null, null, "{userid[0:8]}", 0, 0, 0);'
+	query = f'INSERT INTO users VALUES (null, "{userid}", null, null, "{userid[0:8]}", 0, 0, 0, 0);'
 	cur.execute(query)
 
 	cur.close()
@@ -280,7 +296,7 @@ def createRoom():
 	#add room to database
 	db = get_db()
 	cur = db.cursor()
-	query = f'INSERT INTO rooms VALUES ("{roomid}", 0, 0, null, 10, "",0);'
+	query = f'INSERT INTO rooms VALUES ("{roomid}", 0, 0, null, 10, "",0,"","");'
 	cur.execute(query)
 
 	# close cursor and commit change
@@ -542,6 +558,20 @@ def changeGameState(roomid):
 	ingame = abs(ingame - 1)
 	query1 = f'UPDATE rooms SET ingame = "{ingame}" WHERE roomid = "{roomid}"'
 	cur.execute(query1)
+
+def storeQuestionList(questionlist,roomid):
+	#Given a question list, stores it in the DB (in both full list and nextQuestionList)
+	mylist = ' '.join([str(elem) for elem in s])
+	cur = get_db().cursor()
+	query = f'UPDATE rooms SET questionlist = "{mylist}" AND nextquestionlist = "{mylist}" WHERE roomid = "{roomid}"'
+	cur.execute(query)
+
+def storeNextQuestionList(mylist,roomid):
+	cur = get_db().cursor()
+	query = f'UPDATE rooms SET nextquestionlist = "{mylist}" WHERE roomid = "{roomid}"'
+	cur.execute(query)
+
+
 
 if __name__ == '__main__':
 	socketio.run(app)	

@@ -121,8 +121,12 @@ function GameStateHandler(props) {
   const [currentPage, setCurrentPage] = useState("lobby");
   const [messages, setMessages] = useState([]);
   const [players, setPlayers] = useState([]);
+<<<<<<< HEAD
   const [amHost, setAmHost] = useState(false);
   const [start, setStart] = useState(false);
+=======
+  const [scores, setScores] = useState([]);
+>>>>>>> d943beac7208fc1cb4435838253b319211fd7456
 
   // since anyone can click this link we cannot rely on the userId prop being filled here
   const [userId, setUserId] = useState(() => {
@@ -226,10 +230,19 @@ function GameStateHandler(props) {
       //socket.emit("nextQuestion")
     });
 
-    socket.on("nextQuestion", () => {
+    socket.on("getNextQuestion", () => {
       console.log("Next Question");
-      //socket.emit("nextQuestion")
+      socket.emit("nextQuestion",{"roomId":roomId});
     });
+
+    // socket.on("returnNextQuestion", question =>{
+    //   #aaa make the question into question and answers and display
+    // };
+
+    socket.on("updateScores", scores => {
+      consolve.log("Updating Scores");
+      setScores(scores)
+    };
 
     socket.on("recieved", () => {
       console.log("recieved");
