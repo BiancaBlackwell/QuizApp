@@ -125,6 +125,7 @@ function GameStateHandler(props) {
   const [start, setStart] = useState(false);
   const [question, setQuestion] = useState({});
   const [scores, setScores] = useState([]);
+  const [question, setQuestion] = useState({});
 
   // since anyone can click this link we cannot rely on the userId prop being filled here
   const [userId, setUserId] = useState(() => {
@@ -224,15 +225,16 @@ function GameStateHandler(props) {
 
     socket.on("trivia", () => {
       console.log("********************TRIVIA********************");
-      setCurrentPage("trivia")
-      //socket.emit("nextQuestion")
+      setCurrentPage("trivia");
+      socket.emit("nextQuestion");
     });
 
-    socket.on("getNextQuestion", () => {
-      console.log("Next Question");
-      socket.emit("nextQuestion",{"roomId":roomId});
+    socket.on("displayNextQuestion", mydict =>{
+      console.log("Displaying the Next Question");
+      setQuestion(mydict);
     });
 
+<<<<<<< HEAD
     socket.on("returnNextQuestion", question => {
       console.log("Recieved Question: " + question.question);
       setQuestion(question);
@@ -242,9 +244,11 @@ function GameStateHandler(props) {
     //   #aaa make the question into question and answers and display
     // };
 
+=======
+>>>>>>> 9342ca037bd741e9cdcb9e605903ba745477bff5
     socket.on("updateScores", scores => {
       console.log("Updating Scores");
-      setScores(scores)
+      setScores(scores);
     });
 
     socket.on("recieved", () => {

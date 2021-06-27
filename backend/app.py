@@ -117,9 +117,12 @@ def readyUser(data):
 	result = dbUpdateReady(userid, roomid, True)
 	print(result)
 	if result == 1:
+		#Enables start button for host
 		emit('start', broadcast=True, room=roomid)
 	if(result == 2):
+		#Starts the trivia game
 		dbResetReady(roomid)
+		fetchQuestions(roomid,userid)
 		emit("trivia", broadcast=True, room=roomid)
 	emit('updatePlayers', getPlayers(roomid), broadcast=True, room=roomid)
 
@@ -132,25 +135,6 @@ def unreadyUser(data):
 	dbUpdateReady(userid, roomid, False)
 	emit('unstart', broadcast=True, room=roomid)
 	emit('updatePlayers', getPlayers(roomid), broadcast=True, room=roomid)
-
-@socketio.on('startGame')
-def startGame(data):
-	#GameState function. Validate userid as host. Broadcast update to room.
-	roomid = data["roomId"]
-	userid = data["userId"]
-	count = getNumQuestions(roomid)
-	questionlist = []
-	if(isHost(userid,roomid)>0):
-		print(f"Starting the Game for room {roomid}")
-		changeGameState(roomid)
-		print(f"Fetching questions for Room {roomid}")
-		for i in range(count):
-			newquestion = getQuestion()
-			questionlist = questionlist.append(newquestion)
-		storeQuestionList(questionlist,roomid)
-		emit('getNextQuestion', broadcast=True, room=roomid)
-	else:
-		print(f"ERROR: {userid} is not host.")
 
 @socketio.on('submitAnswer')
 def submitAnswer(data):
@@ -172,10 +156,12 @@ def nextQuestion(data):
 	if(len(mylist) == 0):
 		print("ERROR: No more questions to serve")
 		return
-	nextquestion = mylist[0]
+	nextquestionid = mylist[0]
 	mylist = mylist.pop(0)
 	storeNextQuestionList(mylist,roomid)
-	emit('returnNextQuestion',{nextquestion}, broadcast=True, room=roomid)
+	#Lookup Qid in the database
+	mydict = getQuestionDetails(nextquestionid)
+	emit('displayNextQuestion',mydict, broadcast=True, room=roomid)
 
 @socketio.on('endGame')
 def endGame(data):
@@ -571,11 +557,50 @@ def storeQuestionList(questionlist,roomid):
 	cur = get_db().cursor()
 	query = f'UPDATE rooms SET questionlist = "{mylist}" AND nextquestionlist = "{mylist}" WHERE roomid = "{roomid}"'
 	cur.execute(query)
+	print(f"SETTING QUESTION LIST FOR ROOM TO : {mylist}")
 
 def storeNextQuestionList(mylist,roomid):
 	cur = get_db().cursor()
 	query = f'UPDATE rooms SET nextquestionlist = "{mylist}" WHERE roomid = "{roomid}"'
 	cur.execute(query)
+	print(f"SETTING NEXT QUESTION LIST FOR ROOM TO : {mylist}")
+
+def fetchQuestions(roomid, userid):
+	#Fetch Questions
+	count = getNumQuestions(roomid)
+	questionlist = []
+
+	print(f"Starting the Game for room {roomid}")
+	changeGameState(roomid)
+	print(f"Fetching questions for Room {roomid}")
+	for i in range(count):
+		newquestion = getQuestion()
+		print(newquestion)
+		questionlist = questionlist.append(newquestion)
+	storeQuestionList(questionlist,roomid)
+
+def getQuestionDetails(nextquestionid):
+	#Gets details of a single question returns in dict
+	#mydict = { "question":"Hello", "answers":["1", "2"] }
+	cur = get_db().cursor()
+	query = f'SELECT * FROM complete WHERE id = "{nextquestionid}"'
+	cur.execute(query)
+	question = cur.fetchone()[1]
+	answers = []
+	for i in range(4):
+		newans = cur.fetchone()[i+2]
+		if(newans != None):
+			answers.append(newans)
+		#attempting to append None should do nothing
+	mydict = {"question":question, "answers":answers}
+	return mydict
+
+def getNumQuestions(roomid):
+	cur = get_db().cursor()
+	query = f'SELECT numquestions FROM rooms WHERE roomid = "{roomid}"'
+	cur.execute(query)
+	count = cur.fetchone()[0]
+	return count
 
 
 
