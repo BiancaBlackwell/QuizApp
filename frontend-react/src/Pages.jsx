@@ -121,6 +121,7 @@ function GameStateHandler(props) {
   const [currentPage, setCurrentPage] = useState("lobby");
   const [messages, setMessages] = useState([]);
   const [players, setPlayers] = useState([]);
+  const [scores, setScores] = useState([]);
 
   // since anyone can click this link we cannot rely on the userId prop being filled here
   const [userId, setUserId] = useState(() => {
@@ -211,10 +212,19 @@ function GameStateHandler(props) {
       socket.emit("startGame", {"roomId":roomId, "userId":userId});
     });
 
-    socket.on("nextQuestion", () => {
+    socket.on("getNextQuestion", () => {
       console.log("Next Question");
-      //socket.emit("nextQuestion")
+      socket.emit("nextQuestion",{"roomId":roomId});
     });
+
+    // socket.on("returnNextQuestion", question =>{
+    //   #aaa make the question into question and answers and display
+    // };
+
+    socket.on("updateScores", scores => {
+      consolve.log("Updating Scores");
+      setScores(scores)
+    };
 
     socket.on("recieved", () => {
       console.log("recieved");
