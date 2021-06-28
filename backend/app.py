@@ -387,7 +387,7 @@ def get_db():
 def getFromComplete(id, cur):
 	for row in cur.execute('SELECT * FROM complete WHERE id = ' + str(id)):
 		cur.close()
-		return str(row)
+		return id
 		
 
 def verifyUser(userid):
@@ -585,9 +585,11 @@ def changeGameState(roomid):
 
 def storeQuestionList(questionlist,roomid):
 	#Given a question list, stores it in the DB (in both full list and nextQuestionList)
+	print(f"MY QUESTIONNTY QUESTION LIST IS {questionlist}")
 	mylist = ' '.join([str(elem) for elem in questionlist])
+	print(f"AFTER JOINING MY QUESTIONTY QUESION LIST IS {mylist}")
 	cur = get_db().cursor()
-	query = f'UPDATE rooms SET questionlist = "{mylist}" AND nextquestionlist = "{mylist}" WHERE roomid = "{roomid}"'
+	query = f'UPDATE rooms SET questionlist = "{mylist}" WHERE roomid = "{roomid}"'
 	cur.execute(query)
 	print(f"SETTING QUESTION LIST FOR ROOM TO : {mylist}")
 
@@ -610,10 +612,11 @@ def getQuestionDetails(nextquestionid):
 	cur = get_db().cursor()
 	query = f'SELECT * FROM complete WHERE id = "{nextquestionid}"'
 	cur.execute(query)
-	question = cur.fetchone()[1]
+	row = cur.fetchone()
+	question = row[0]
 	answers = []
 	for i in range(4):
-		newans = cur.fetchone()[i+2]
+		newans = row[i+2]
 		if(newans != None):
 			answers.append(newans)
 		#attempting to append None should do nothing
@@ -632,9 +635,11 @@ def getFirstQuestion(roomid):
 	questionindex = 0
 	cur = get_db().cursor()
 	query = f'SELECT questionlist FROM rooms WHERE roomid = "{roomid}"'
-	cur.execue(query)
+	cur.execute(query)
 	questionlist = cur.fetchone()[0]
+	print(f"MY QUESTION STRING IS: {questionlist}")
 	mylist = list(questionlist.split(" "))
+	print(f"MY QUESTION LIST IS: {mylist}")
 	mydict = getQuestionDetails(mylist[0])
 	incrementQuestionIndex(roomid)
 	return mydict
