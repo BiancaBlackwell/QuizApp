@@ -117,6 +117,7 @@ function GameStateHandler(props) {
   const [amHost, setAmHost] = useState(false);
   const [start, setStart] = useState(false);
   const [question, setQuestion] = useState({});
+  const [victory, setVictory] = useState([]);
 
   // since anyone can click this link we cannot rely on the userId prop being filled here
   const [userId, setUserId] = useState(() => {
@@ -192,16 +193,16 @@ function GameStateHandler(props) {
       console.log("recieved");
     });
 
-<<<<<<< HEAD
-=======
-    socket.on("outOfQuestions", () =>{
+    socket.on("outOfQuestions", victory =>{
       console.log("End of Round! Displaying Victory Page");
 
+      console.log(victory);
+
+      setVictory(victory);
+      setCurrentPage("victory")
 
     });
 
-
->>>>>>> 3914fb157e65ce1fde5dd260edd4447a16e4049f
     socket.emit("identify", {"roomId": roomId, "userId":userId});
 
 
@@ -249,7 +250,7 @@ ONLY WANTS TO TRIGGER SOMETIMES
       <div>{roomId}</div>
       {currentPage === "lobby" && <Lobby userId = {userId} roomId = {roomId} messages={messages} players={players} amHost={amHost} start={start}/>}
       {currentPage === "trivia" && <Trivia userId = {userId} roomId = {roomId} players={players} question= { question }/>}
-      {currentPage === "victory" && <Victory userId = {userId} roomId = {roomId} players={players} toLobby={toLobby}/>}
+      {currentPage === "victory" && <Victory userId = {userId} roomId = {roomId} players={players} toLobby={toLobby} victory={victory}/>}
     </div>
   )
 }
@@ -594,7 +595,7 @@ function VictoryQuestions(props) {
       {
         props.questions && props.questions.map((question, ind) => {
           if(question.answers.length === 2){
-            return (<div className="card question mb-3 w-75">
+            return (<div className="card question mb-3 w-75" key={ind}>
               <div className="card-body">
                 <h5 className="card-title mb-0">Question 1</h5>
                 <p className="card-text">{question.question}</p>
@@ -606,7 +607,7 @@ function VictoryQuestions(props) {
             </div>)
           }
           else{
-            return (<div className="card question mb-3 w-75">
+            return (<div className="card question mb-3 w-75" key={ind}>
               <div className="card-body">
                 <h5 className="card-title mb-0">Question 1</h5>
                 <p className="card-text">{question.question}</p>
@@ -626,7 +627,7 @@ function VictoryQuestions(props) {
 }
 
 
-function Victory({players, toLobby, podium}) {
+function Victory({players, toLobby, victory}) {
 
   const handleClick = () => {
     toLobby();
@@ -645,14 +646,14 @@ function Victory({players, toLobby, podium}) {
 
         <div className="col-xs-12" style={{height: "20px"}}>
 
-          <VictoryPodium podium={ podium }/>
+          <VictoryPodium podium={ victory.podium }/>
           
           <br/>
 
           <button type="submit" className="btn btn-dark text-nowrap w-75"onClick={ handleClick }>Return to Lobby</button>
           <div className="col-xs-12" style={{height: "20px"}}></div> 
 
-          <VictoryQuestions questions = {[{ question: 'underwear?', correct_answer: 0, answers:["yes", "no"]}, { question: 'underwear?', correct_answer: 3, answers:["yes", "no", "hell no", "hell yeah"]}]}/>
+          <VictoryQuestions questions = {victory.questions}/>
 
         </div>
       </div>
@@ -663,7 +664,7 @@ function Victory({players, toLobby, podium}) {
 
 function VictoryPodium({podium}){
 
-  console.log()
+  console.log(podium);
 
   return (
     <div className="row">

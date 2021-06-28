@@ -5,6 +5,7 @@ import uuid
 import string
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit, join_room, leave_room, send
+from werkzeug.datastructures import auth_property
 
 """How to use: flask run"""
 
@@ -187,7 +188,7 @@ def nextQuestion(roomid):
 
 	if(questionindex == maxquestions-1):
 		#this would be a greaaaaaaat place to put a emit that puts the user on the victory screen
-		emit('outOfQuestions',broadcast=True,roomid=roomid)
+		emit('outOfQuestions', {"podium":getVictoryStats(roomid), "questions":getVictoryQuestions(roomid)}, broadcast=True,roomid=roomid)
 		return
 
 	nextquestionid = questionlist[questionindex]
@@ -265,7 +266,7 @@ def getQuestionWithCategory(category):
 		cur.close()
 		return getFromComplete(row[0], cur)
 	cur.close()
-	return "ToDo " + str(category);
+	return "ToDo " + str(category)
 
 
 
@@ -712,6 +713,29 @@ def resetAllPlayersAnswered(roomid):
 	cur = get_db().cursor()
 	query = f'UPDATE users SET answered = 0 WHERE roomid = "{roomid}"'
 	cur.execute(query)
+
+def getVictoryStats(roomid):
+	if not verifyRoom(roomid):
+		return
+
+	players = getPlayers(roomid, True)
+	print(players)
+	players = sorted(players, key = lambda name: name['score'])
+	list.reverse(players)
+	print(players)
+	return {"maxScore":players[0]["score"], "topPlayers":players[0:3]}
+
+def getVictoryQuestions(roomid):
+	if not verifyRoom(roomid):
+		return
+
+	victoryList = []
+	for qid in getQuestionList(roomid):
+		question = getQuestionDetails(qid)
+		question["correct_answer"] = getQuestionAnswer(qid)
+		victoryList.append(question)
+	return victoryList
+
 
 if __name__ == '__main__':
 	socketio.run(app)	
