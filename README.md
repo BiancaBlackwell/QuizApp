@@ -1,7 +1,7 @@
 # QuizApp
 QuizApp is a Trivia WebApp. It is highly responsive, as all client-to-client interactions have been implemented with flask_socketio.
 
-##Installation
+##Installation##
 1) Install nodejs and npm
   Install npm and nodejs from the NodeSource repo:
   ```bash
@@ -30,7 +30,7 @@ QuizApp is a Trivia WebApp. It is highly responsive, as all client-to-client int
   ```
   note: if you do not have node_modules in ~/frontend-react, it will not run
 
-##Running the Servers
+##Running the Servers##
 We have a frontend React server, and a backend Flask webserver. Open two consoles.
 
 In ~/backend run
@@ -44,7 +44,7 @@ npm start
 
 Now you should be able to access the site on localhost:3000.
 
-##In-Progress Issues
+##In-Progress Issues##
 
 Issue  | Details
 ------------- | -------------
@@ -54,10 +54,10 @@ categories | Choice of categories is not currently implemented, but the front-en
 timer | Time settings is not currently implemented, but the front-end component is shown. 
 joinUrl | You cannot join by cicking the url/roomid yet. You must go through the main page and enter a valid roomid.
 
-##Dependencies
+##Dependencies##
 Frontend: React, axios, socket.io
 Backend: Flask, Sqlite3, CORS, flask_socketio
 
-##Contributors
+##Contributors##
 Austin Mager, Bianca Blackwell, Cameron Egger, John Dikeman
 
