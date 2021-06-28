@@ -616,12 +616,17 @@ def getQuestionDetails(nextquestionid):
 	row = cur.fetchone()
 	question = row[1]
 	answers = []
+	TFcount = 0
 	for i in range(4):
 		newans = row[i+2]
-		if(newans != None):
-			answers.append(newans)
-		#attempting to append None should do nothing
+		if TFcount == 2:
+			break;
+		if(newans == "False" or newans == "True" or newans == "yes" or newans == "no"):
+			TFcount = TFcount + 1
+		answers.append(newans)
+		
 	mydict = {"question":question, "answers":answers}
+	print(F"THESE ARE THE ANSWERSSSSSSSS: {answers}")
 	return mydict
 
 def getNumQuestions(roomid):
