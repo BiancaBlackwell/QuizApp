@@ -193,6 +193,7 @@ def nextQuestion(roomid):
 	nextquestionid = questionlist[questionindex]
 	mydict = getQuestionDetails(nextquestionid)
 	incrementQuestionIndex(roomid)
+	resetAllPlayersAnswered(roomid)
 	emit('displayNextQuestion',mydict, broadcast=True, room=roomid)
 
 @socketio.on('endGame')
@@ -654,9 +655,10 @@ def validateAnswerChoice(roomid,userid,answerChoice):
 	cur = get_db().cursor()
 	query = f'SELECT questionlist, questionindex FROM rooms WHERE roomid = "{roomid}"'
 	cur.execute(query)
-	questionstr = cur.fetchone()[0]
-	questionlist = list(questionlist.split(" "))
-	questionindex = cur.fetchone()[1]
+	row = cur.fetchone()
+	questionstr = row[0]
+	questionlist = list(questionstr.split(" "))
+	questionindex = row[1]
 	answer = getQuestionAnswer(questionlist[questionindex])
 
 	if(answer == answerChoice):
@@ -695,7 +697,7 @@ def getQuestionList(roomid):
 	query = f'SELECT questionlist FROM rooms WHERE roomid = "{roomid}"'
 	cur.execute(query)
 	questionstr = cur.fetchone()[0]
-	questionlist = list(questionlist.split(" "))	
+	questionlist = list(questionstr.split(" "))	
 	return questionlist
 
 def getQuestionIndex(roomid):
@@ -704,6 +706,11 @@ def getQuestionIndex(roomid):
 	cur.execute(query)
 	questionindex = cur.fetchone()[0]
 	return questionindex
+
+def resetAllPlayersAnswered(roomid):
+	cur = get_db().cursor()
+	query = f'UPDATE users SET answered = 0 WHERE roomid = "{roomid}"'
+	cur.execute(query)
 
 if __name__ == '__main__':
 	socketio.run(app)	
