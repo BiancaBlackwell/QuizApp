@@ -623,7 +623,7 @@ def getQuestionDetails(nextquestionid):
 		newans = row[i+2]
 		if TFcount == 2:
 			break;
-		if(newans == "False" or newans == "True" or newans == "yes" or newans == "no"):
+		if(newans == "False" or newans == "True" or newans == "Yes" or newans == "No"):
 			TFcount = TFcount + 1
 		answers.append(newans)
 		
