@@ -3,15 +3,8 @@ import axios from "axios";
 import { Redirect, useParams } from "react-router-dom";
 import React, { useEffect, useState, useRef } from 'react';
 import socket from "./socket";
-import io from "socket.io-client";
-
 
 const BACKEND_URL = "http://localhost:5000"
-
-//const SOCKET_URL = "http://localhost:5000"
-//let socket;
-
-
 
 
 function Landing() {
@@ -123,8 +116,8 @@ function GameStateHandler(props) {
   const [players, setPlayers] = useState([]);
   const [amHost, setAmHost] = useState(false);
   const [start, setStart] = useState(false);
-  const [scores, setScores] = useState([]);
   const [question, setQuestion] = useState({});
+  const [victory, setVictory] = useState([]);
 
   // since anyone can click this link we cannot rely on the userId prop being filled here
   const [userId, setUserId] = useState(() => {
@@ -136,44 +129,6 @@ function GameStateHandler(props) {
       return undefined;
     }
   });
-
-/*
-
-  //**************************************************
-  //should trigger when page is closed but doesn't
-  //**************************************************
-
-  useEffect(() => {
-    console.log('entering go**********');
-    return  () => {
-      window.addEventListener("beforeunload", function(e) {
-        let confirmationMessage = "o/";
-        (e || window.event).returnvalue = confirmationMessage;
-  
-        socket.emit("message", {"roomId":roomId, 'message':"outside ghs", "userId":userId});
-        socket.emit("disconnectUser", {"roomId":roomId, "userId":userId});
-        socket.removeAllListeners();
-        socket.disconnect();
-
-        return confirmationMessage;
-      });
-    }
-
-    //or
-
-    return  () => {
-      socket.emit("message", {"roomId":roomId, 'message':"inside gsh", "userId":userId});
-      socket.emit("disconnectUser", {"roomId":roomId, "userId":userId});
-      socket.removeAllListeners();
-      socket.disconnect();
-    }
-
-  });
-  
-  //**************************************************
-  //should trigger when page is closed but doesn't
-  //**************************************************  
-  */
 
   // handle creating the userId if the person came here by clicking the link
   useEffect(() => {
@@ -234,94 +189,55 @@ function GameStateHandler(props) {
       setQuestion(mydict);
     });
 
-    socket.on("returnNextQuestion", question => {
-      console.log("Recieved Question: " + question.question);
-      setQuestion(question);
-    });
-
-    // socket.on("returnNextQuestion", question =>{
-    //   #aaa make the question into question and answers and display
-    // };
-
-    socket.on("updateScores", scores => {
-      console.log("Updating Scores");
-      setScores(scores);
-    });
-
     socket.on("recieved", () => {
       console.log("recieved");
     });
 
-    socket.on("outOfQuestions", () =>{
+    socket.on("outOfQuestions", victory =>{
       console.log("End of Round! Displaying Victory Page");
 
+      console.log(victory);
+
+      setVictory(victory);
+      setCurrentPage("victory")
 
     });
-
 
     socket.emit("identify", {"roomId": roomId, "userId":userId});
 
 
 
-    /*
-
-    //**************************************************
-    //should trigger when page is closed but doesn't
-    //**************************************************
-
-    return  () => {
-      window.addEventListener("beforeunload", function(e) {
-        let confirmationMessage = "o/";
-        (e || window.event).returnvalue = confirmationMessage;
-  
-        socket.emit("message", {"roomId":roomId, 'message':"inside gsh", "userId":userId});
-        socket.emit("disconnectUser", {"roomId":roomId, "userId":userId});
-        socket.removeAllListeners();
-        socket.disconnect();
-        return confirmationMessage;
-      });
-    }
-
-    //or
-
-    return  () => {
-      socket.emit("message", {"roomId":roomId, 'message':"inside gsh", "userId":userId});
-      socket.emit("disconnectUser", {"roomId":roomId, "userId":userId});
-      socket.removeAllListeners();
-      socket.disconnect();
-    }
-
-    //**************************************************
-    //should trigger when page is closed but doesn't
-    //**************************************************    
-
-
-    // this also doesn't work
-    window.addEventListener('beforeunload', alertUser)
-    return () => {
-      window.removeEventListener('beforeunload', alertUser)
-    
-    window.addEventListener('beforeunload',function(e) {
-
-      socket.emit("message", {"roomId":roomId, 'message':"inside gsh", "userId":userId});
-
-    });
-
-*/
     // passing an empty array to useEffect makes it run once when the component is mounted
   }, []);
 
-/*
+
+  /*
+
+******************************
+ATTEMPTED DISSCONNECT STUFF
+*******************************
+ONLY WANTS TO TRIGGER SOMETIMES
+
+
   // this also doesn't work
-  const alertUser = e => {
-
-    socket.emit("message", {"roomId":roomId, 'message':"inside gsh", "userId":userId});
-    socket.emit("disconnectUser", {"roomId":roomId, "userId":userId});
-
-    e.preventDefault()
-    e.returnValue = ''
+  const onDisconnect = (e) => {
+    e.preventDefault();
+    e.returnValue = ""
+    console.log("Disconnecting User");
+    //socket.emit("disconnectUser", {"roomId":roomId, "userId":userId});
+    socket.emit("sendMessage", {"roomId":roomId, 'message':'hey', "userId":userId});
+    //socket.removeAllListeners();
+    //socket.disconnect();
   }
 
+
+  useEffect(() => {
+    // this also doesn't work
+    window.addEventListener('beforeunload', onDisconnect);
+   return () => {
+      window.removeEventListener('beforeunload', onDisconnect);
+    }
+  }, [onDisconnect]);
 */
 
 
@@ -334,7 +250,7 @@ function GameStateHandler(props) {
       <div>{roomId}</div>
       {currentPage === "lobby" && <Lobby userId = {userId} roomId = {roomId} messages={messages} players={players} amHost={amHost} start={start}/>}
       {currentPage === "trivia" && <Trivia userId = {userId} roomId = {roomId} players={players} question= { question }/>}
-      {currentPage === "victory" && <Victory userId = {userId} roomId = {roomId} players={players} toLobby={toLobby}/>}
+      {currentPage === "victory" && <Victory userId = {userId} roomId = {roomId} players={players} toLobby={toLobby} victory={victory}/>}
     </div>
   )
 }
@@ -380,47 +296,6 @@ function Lobby({userId, roomId, messages, players, amHost, start}) {
       onClick()
     }
   }
-
-/*
-
-  //**************************************************
-  //should trigger when page is closed but doesn't
-  //**************************************************
-
-  useEffect(() => {
-    console.log('entering lobby**********');
-    return  () => {
-      window.addEventListener("beforeunload", function(e) {
-        let confirmationMessage = "o/";
-        (e || window.event).returnvalue = confirmationMessage;
-  
-        socket.emit("message", {"roomId":roomId, 'message':"lobby", "userId":userId});
-        socket.emit("disconnectUser", {"roomId":roomId, "userId":userId});
-        socket.removeAllListeners();
-        socket.disconnect();
-
-        return confirmationMessage;
-      });
-    }
-
-    //or
-
-    return  () => {
-      socket.emit("message", {"roomId":roomId, 'message':"inside gsh", "userId":userId});
-      socket.emit("disconnectUser", {"roomId":roomId, "userId":userId});
-      socket.removeAllListeners();
-      socket.disconnect();
-    }
-  });
-
-  //**************************************************
-  //should trigger when page is closed but doesn't
-  //**************************************************
- 
-  */  
-
-
-
 
   return (
 
@@ -634,21 +509,6 @@ function PlayerSidebar(props) {
 
 function Trivia({userId, roomId, players, question}) {
 
- /* useEffect(() => {
-    return  () => {
-      window.addEventListener("beforeunload", function(e) {
-        let confirmationMessage = "o/";
-        (e || window.event).returnvalue = confirmationMessage;
-  
-        socket.emit("disconnectUser", {"roomId":roomId, "userId":userId});
-        socket.removeAllListeners();
-        socket.disconnect();
-
-        return confirmationMessage;
-      });
-    }
-  });*/
-
   return (
     <div className="coontainer-fluid">
       <div className="row">
@@ -735,7 +595,7 @@ function VictoryQuestions(props) {
       {
         props.questions && props.questions.map((question, ind) => {
           if(question.answers.length === 2){
-            return (<div className="card question mb-3 w-75">
+            return (<div className="card question mb-3 w-75" key={ind}>
               <div className="card-body">
                 <h5 className="card-title mb-0">Question 1</h5>
                 <p className="card-text">{question.question}</p>
@@ -747,7 +607,7 @@ function VictoryQuestions(props) {
             </div>)
           }
           else{
-            return (<div className="card question mb-3 w-75">
+            return (<div className="card question mb-3 w-75" key={ind}>
               <div className="card-body">
                 <h5 className="card-title mb-0">Question 1</h5>
                 <p className="card-text">{question.question}</p>
@@ -767,7 +627,7 @@ function VictoryQuestions(props) {
 }
 
 
-function Victory({players, toLobby}) {
+function Victory({players, toLobby, victory}) {
 
   const handleClick = () => {
     toLobby();
@@ -785,63 +645,15 @@ function Victory({players, toLobby}) {
         <h1 className="display-3" style={{color: "#212121"}}><strong>Final Scores</strong></h1>
 
         <div className="col-xs-12" style={{height: "20px"}}>
-            <VictoryPodium maxScore={89} topPlayers={[{"name":"Abe Abbleton", "score":57}, {"name":"Bob Bobbington", "score":89}, {"name":"Bubbles", "score":50}]}/>
+
+          <VictoryPodium podium={ victory.podium }/>
           
-          
-          {/*
-          <div className="row">
-
-            <div className="row">
-
-              <div className="col align-self-end">
-                <div className="card player">
-                  <div className="col-xs-12" style={{height: "30px"}}></div>
-                  <h5 className="card-title mb-0">Abe Abbleton</h5>
-                  <p className="card-text">57 pts.</p>
-                </div>
-              </div>
-
-              <div className="col align-self-end">
-                <div className="card player">
-                  <div className="col-xs-12" style={{height: "100px"}}></div>
-                  <h5 className="card-title mb-0">Bob Bobbington</h5>
-                  <p className="card-text">89 pts.</p>
-                </div>
-              </div>
-
-              <div className="col align-self-end">
-                <div className="card player">
-                  <h5 className="card-title mb-0">Bubbles</h5>
-                  <p className="card-text">50 pts.</p>
-                </div>
-              </div>
-
-            </div>
-
-            <div className = "row">
-
-              <div className="col">
-                <h5>2</h5>
-              </div>
-
-              <div className="col">
-                <h5>1</h5>
-              </div>
-
-              <div className="col">
-                <h5>3</h5>
-              </div>                                         
-            </div>
-          </div>
-          */}
-
-
           <br/>
 
           <button type="submit" className="btn btn-dark text-nowrap w-75"onClick={ handleClick }>Return to Lobby</button>
           <div className="col-xs-12" style={{height: "20px"}}></div> 
 
-          <VictoryQuestions questions = {[{ question: 'underwear?', correct_answer: 0, answers:["yes", "no"]}, { question: 'underwear?', correct_answer: 3, answers:["yes", "no", "hell no", "hell yeah"]}]}/>
+          <VictoryQuestions questions = {victory.questions}/>
 
         </div>
       </div>
@@ -850,19 +662,19 @@ function Victory({players, toLobby}) {
 )
 }
 
-function VictoryPodium(props){
+function VictoryPodium({podium}){
 
-  console.log()
+  console.log(podium);
 
   return (
     <div className="row">
 
     <div className="row">
-      { props.topPlayers && props.topPlayers.map((player, ind) => {
+      { podium.topPlayers && podium.topPlayers.map((player, ind) => {
         return(
           <div className="col align-self-end" key={ind}>
           <div className="card player">
-            <div className="col-xs-12" style={{height: Math.round(player.score / props.maxScore * 100)+"px"}}></div>
+            <div className="col-xs-12" style={{height: Math.round(player.score / podium.maxScore * 100)+"px"}}></div>
             <h5 className="card-title mb-0">{player.name}</h5>
             <p className="card-text">{player.score} pts.</p>
           </div>

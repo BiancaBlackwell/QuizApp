@@ -5,6 +5,7 @@ import uuid
 import string
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit, join_room, leave_room, send
+from werkzeug.datastructures import auth_property
 
 """How to use: flask run"""
 
@@ -187,7 +188,7 @@ def nextQuestion(roomid):
 
 	if(questionindex == maxquestions-1):
 		#this would be a greaaaaaaat place to put a emit that puts the user on the victory screen
-		emit('outOfQuestions',broadcast=True,roomid=roomid)
+		emit('outOfQuestions', {"podium":getVictoryStats(roomid), "questions":getVictoryQuestions(roomid)}, broadcast=True,roomid=roomid)
 		return
 
 	nextquestionid = questionlist[questionindex]
@@ -224,13 +225,13 @@ def disconnectUser(data):
 		#Disconnected user is host
 		deleted = switch_host(roomid)
 
-	if(deleted == 0):
+	"""if(deleted == 0):
 		#if the room still exists...
 		query1 = f'UPDATE rooms SET partysize = partysize - 1 AND numReady = numReady - 1 WHERE roomid = "{roomid}";'
 		cur.execute(query1)
 
 		query2 = f'UPDATE users SET connected = 0 AND isReady = 0 WHERE userid = "{userid}"'
-		cur.execute(query2)
+		cur.execute(query2)"""
 
 	emit('message', {"message":'Player ' + getNicknameFromUserid(userid) + ' has disconnected!', "userId":'server'}, broadcast=True, room=roomid)
 	removeUser(userid)
@@ -265,7 +266,7 @@ def getQuestionWithCategory(category):
 		cur.close()
 		return getFromComplete(row[0], cur)
 	cur.close()
-	return "ToDo " + str(category);
+	return "ToDo " + str(category)
 
 
 
@@ -365,6 +366,10 @@ def removeUser(userid):
 
 	query = f'UPDATE rooms SET partysize = partysize - 1 WHERE roomid = "{roomid}";'
 	cur.execute(query)
+
+	query = f'UPDATE rooms SET numReady = numReady - 1 FROM rooms INNER JOIN users ON rooms.roomid = users.roomid WHERE rooms.roomid = "{roomid}" AND users.isReady = 1 AND users.userid = "{userid}";'
+	cur.execute(query)
+
 
 	query = f'DELETE FROM rooms WHERE partysize = 0;'
 	cur.execute(query)
@@ -537,18 +542,15 @@ def switch_host(roomid):
 	query = f'SELECT COUNT(userid) FROM users WHERE roomid = "{roomid}"'
 	cur.execute(query)
 	count = cur.fetchone()[0]
-	if(count<2):
-		#no one else to switch to. DELETE THE ROOM!
-		removeRoom(roomid)
-	else:
+	if(count>=2):
 		#switch host
 		query2 = f'SELECT userid FROM users WHERE roomid = "{roomid}" LIMIT 1'
 		cur.execute(query2)
 		nextHost = cur.fetchone()[0]
 		query3 = f'UPDATE rooms SET hostid = {nextHost} WHERE roomid = {roomid}'
 		cur.execute(query3)
-	emit('newHost', {"userId":nextHost}, broadcast=True, room=roomid)
-	emit('message', {"message":'Player ' + getNicknameFromUserid(nextHost) + ' is now Host!', "userId":'server'}, broadcast=True, room=roomid)
+		emit('newHost', {"userId":nextHost}, broadcast=True, room=roomid)
+		emit('message', {"message":'Player ' + getNicknameFromUserid(nextHost) + ' is now Host!', "userId":'server'}, broadcast=True, room=roomid)
 
 		
 def incrementRoom(roomid):
@@ -718,6 +720,29 @@ def resetAllPlayersAnswered(roomid):
 	cur = get_db().cursor()
 	query = f'UPDATE users SET answered = 0 WHERE roomid = "{roomid}"'
 	cur.execute(query)
+
+def getVictoryStats(roomid):
+	if not verifyRoom(roomid):
+		return
+
+	players = getPlayers(roomid, True)
+	print(players)
+	players = sorted(players, key = lambda name: name['score'])
+	list.reverse(players)
+	print(players)
+	return {"maxScore":players[0]["score"], "topPlayers":players[0:3]}
+
+def getVictoryQuestions(roomid):
+	if not verifyRoom(roomid):
+		return
+
+	victoryList = []
+	for qid in getQuestionList(roomid):
+		question = getQuestionDetails(qid)
+		question["correct_answer"] = getQuestionAnswer(qid)
+		victoryList.append(question)
+	return victoryList
+
 
 if __name__ == '__main__':
 	socketio.run(app)	
