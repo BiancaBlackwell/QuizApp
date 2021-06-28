@@ -176,10 +176,10 @@ function GameStateHandler(props) {
         setAmHost(true);
     });
 
-    socket.on("trivia", () => {
+    socket.on("trivia", firstquestion => {
       console.log("********************TRIVIA********************");
+      setQuestion(firstquestion);
       setCurrentPage("trivia");
-      socket.emit("nextQuestion");
     });
 
     socket.on("displayNextQuestion", mydict =>{
