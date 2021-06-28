@@ -141,17 +141,35 @@ def unreadyUser(data):
 def submitAnswer(data):
 	#UserGameState function. Update time recieved in list in Room table. Update answer submited in Rooms table. Check game condition (kill timer thread if met). 
 	#Emit update to user who sent you data (right/wrong), Update Points, Broadcast update to room.
+	#socket.emit("submitAnswer", {"roomId":props.roomId, "userId":props.userId, "answer":choice});
 	roomid = data["roomId"]
 	userid = data["userId"]
 	answerChoice = data["answer"]
 	print(f'Recieved answer {answerChoice} from [{userid} in room {roomid}]')
-
+	#Check if user has answered before, return if so.
+	cur = get_db().cursor()
+	query = f'SELECT answered FROM users WHERE userid = "{userid}"'
+	cur.execute(query)
+	status = cur.fetchone()[0]
+	if(status == 1):
+		print(f"user {userid} has already answered this question!")
+		return
+	validateAnswerChoice(roomid,userid,answerChoice)
+	#Set answered = true for userid
+	query1 = f'UPDATE users SET answered = 1 WHERE userid = "{userid}"'
+	cur.execute(query1)
+	emit('updatePlayers', getPlayers(roomid, True), broadcast=True, room=roomid)
+	#Check if all players have answered
+	questionstatus = checkAllPlayersAnswered(roomid)
+	if(questionstatus == True):
+		#go to next question
+		nextQuestion(roomid)
 """
 server: emits 'trivia' with the first question as data (check)
 
-client: sets question and changes page to trivia
+client: sets question and changes page to trivia (check)
 
-client: emits 'submitAnswer' with their answer
+client: emits 'submitAnswer' with their answer (check)
 
 server: gets answer, adjusts score, 
 --emits 'updateplayers' to adjust on clients (we can do this on each answer to be more real time or at the end of the round), 
@@ -160,22 +178,21 @@ server: gets answer, adjusts score,
 --if last question emit something to tell players to got to victory page, passing in victory stats as data.
 """
 
-@socketio.on('nextQuestion')
-def nextQuestion(data):
+def nextQuestion(roomid):
 	#GameState function. Spawn new timer thread, Broadcast update to room.
 	print("Getting next question")
-	roomid = data["roomId"]
-	nextquestionlist = data["nextquestionlist"]
-	#no timer for now
-	mylist = list(nextquestionlist.split(" "))
-	if(len(mylist) == 0):
+	questionlist = getQuestionList(roomid)
+	questionindex = getQuestionIndex(roomid)
+	maxquestions = getNumQuestions(roomid)
+
+	if(questionindex == maxquestions-1):
+		#this would be a greaaaaaaat place to put a emit that puts the user on the victory screen
 		print("ERROR: No more questions to serve")
 		return
-	nextquestionid = mylist[0]
-	mylist = mylist.pop(0)
-	storeNextQuestionList(mylist,roomid)
-	#Lookup Qid in the database
+
+	nextquestionid = questionlist[questionindex]
 	mydict = getQuestionDetails(nextquestionid)
+	incrementQuestionIndex(roomid)
 	emit('displayNextQuestion',mydict, broadcast=True, room=roomid)
 
 @socketio.on('endGame')
@@ -574,12 +591,6 @@ def storeQuestionList(questionlist,roomid):
 	cur.execute(query)
 	print(f"SETTING QUESTION LIST FOR ROOM TO : {mylist}")
 
-def storeNextQuestionList(mylist,roomid):
-	cur = get_db().cursor()
-	query = f'UPDATE rooms SET nextquestionlist = "{mylist}" WHERE roomid = "{roomid}"'
-	cur.execute(query)
-	print(f"SETTING NEXT QUESTION LIST FOR ROOM TO : {mylist}")
-
 def fetchQuestions(roomid, userid):
 	#Fetch Questions
 	count = getNumQuestions(roomid)
@@ -631,6 +642,63 @@ def getFirstQuestion(roomid):
 def incrementQuestionIndex(roomid):
 	cur = get_db().cursor()
 	query = f'UPDATE rooms SET questionindex = questionindex + 1 WHERE roomid = "{roomid}"'
+	cur.execute(query)
+
+def validateAnswerChoice(roomid,userid,answerChoice):
+	#get questionid from questionlist and questionindex in rooms, then lookup in complete for the correct answer and check. If correct, update score. if not, don't.
+	cur = get_db().cursor()
+	query = f'SELECT questionlist, questionindex FROM rooms WHERE roomid = "{roomid}"'
+	cur.execute(query)
+	questionstr = cur.fetchone()[0]
+	questionlist = list(questionlist.split(" "))
+	questionindex = cur.fetchone()[1]
+	answer = getQuestionAnswer(questionlist[questionindex])
+
+	if(answer == answerChoice):
+		#update points
+		query2 = f'UPDATE users SET score = score + 1 WHERE userid = "{userid}"'
+		cur.execute(query2)
+		return True
+	else:
+		return False
+
+def getQuestionAnswer(questionid):
+	#gets answer to the question given the id in complete
+	cur = get_db().cursor()
+	query = f'SELECT correct_answer FROM complete WHERE id = "{questionid}"'
+	cur.execute(query)
+	answer = cur.fetchone()[0]
+	return answer
+
+def checkAllPlayersAnswered(roomid):
+	#checks if everyone in a room (and connected) has answered the question. if they have return true.
+	cur = get_db().cursor()
+	query = f'SELECT COUNT(userid) FROM users WHERE roomid = "{roomid}" AND connected = 1'
+	cur.execute(query)
+	countconnected = cur.fetchone()[0]
+	query2 = f'SELECT COUNT(userid) FROM users WHERE roomid = "{roomid}" AND connected = 1 AND answered = 1'
+	cur.execute(query2)
+	countanswered = cur.fetchone()[0]
+	if(countconnected == countanswered):
+		return True
+	else:
+		return False
+
+def getQuestionList(roomid):
+	#checks the questionlist from DB for rooms, returns it as a list
+	cur = get_db().cursor()
+	query = f'SELECT questionlist FROM rooms WHERE roomid = "{roomid}"'
+	cur.execute(query)
+	questionstr = cur.fetchone()[0]
+	questionlist = list(questionlist.split(" "))	
+	return questionlist
+
+def getQuestionIndex(roomid):
+	cur = get_db().cursor()
+	query = f'SELECT questionindex FROM rooms WHERE roomid = "{roomid}"'
+	cur.execute(query)
+	questionindex = cur.fetchone()[0]
+	return questionindex
 
 if __name__ == '__main__':
 	socketio.run(app)	
