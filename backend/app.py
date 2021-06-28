@@ -120,13 +120,15 @@ def readyUser(data):
 	if result == 1:
 		#All users are ready. Enables start button for host
 		emit('start', broadcast=True, room=roomid)
+	emit('updatePlayers', getPlayers(roomid), broadcast=True, room=roomid)
 	if(result == 2):
 		#Host Clicked Start Button. Initialize all questions in DB, get first question, broadcast to room.
 		dbResetReady(roomid)
 		fetchQuestions(roomid,userid)
 		firstquestion = getFirstQuestion(roomid)
 		emit("trivia", firstquestion, broadcast=True, room=roomid)
-	emit('updatePlayers', getPlayers(roomid), broadcast=True, room=roomid)
+		emit('updatePlayers', getPlayers(roomid, True), broadcast=True, room=roomid)
+
 
 @socketio.on('unreadyUser')
 def unreadyUser(data):
@@ -182,9 +184,12 @@ server: gets answer, adjusts score,
 def nextQuestion(roomid):
 	#GameState function. Spawn new timer thread, Broadcast update to room.
 	print("Getting next question")
+	incrementQuestionIndex(roomid)
+
 	questionlist = getQuestionList(roomid)
 	questionindex = getQuestionIndex(roomid)
 	maxquestions = getNumQuestions(roomid)
+	print("Getting next question1")
 
 	if(questionindex == maxquestions-1):
 		#this would be a greaaaaaaat place to put a emit that puts the user on the victory screen
@@ -193,7 +198,6 @@ def nextQuestion(roomid):
 
 	nextquestionid = questionlist[questionindex]
 	mydict = getQuestionDetails(nextquestionid)
-	incrementQuestionIndex(roomid)
 	resetAllPlayersAnswered(roomid)
 	emit('displayNextQuestion',mydict, broadcast=True, room=roomid)
 
@@ -318,7 +322,7 @@ def createRoom():
 	#add room to database
 	db = get_db()
 	cur = db.cursor()
-	query = f'INSERT INTO rooms VALUES ("{roomid}", 0, 0, null, 10, "",0,"",0);'
+	query = f'INSERT INTO rooms VALUES ("{roomid}", 0, 0, null, 10, "",0,"",-1);'
 	cur.execute(query)
 
 	# close cursor and commit change
@@ -643,8 +647,8 @@ def getFirstQuestion(roomid):
 	print(f"MY QUESTION STRING IS: {questionlist}")
 	mylist = list(questionlist.split(" "))
 	print(f"MY QUESTION LIST IS: {mylist}")
-	mydict = getQuestionDetails(mylist[0])
 	incrementQuestionIndex(roomid)
+	mydict = getQuestionDetails(mylist[0])
 	return mydict
 
 def incrementQuestionIndex(roomid):
@@ -663,7 +667,10 @@ def validateAnswerChoice(roomid,userid,answerChoice):
 	questionindex = row[1]
 	answer = getQuestionAnswer(questionlist[questionindex])
 
+	print(f'User enntered {answerChoice} the Correct Answer is: {answer}')
+
 	if(answer == answerChoice):
+		print('Updating Score')
 		#update points
 		query2 = f'UPDATE users SET score = score + 1 WHERE userid = "{userid}"'
 		cur.execute(query2)
@@ -724,8 +731,12 @@ def getVictoryStats(roomid):
 	print(players)
 	players = sorted(players, key = lambda name: name['score'])
 	list.reverse(players)
+	players = players[0:3]
+	temp = players[1]
+	players[1] = players[0]
+	players[0] = temp
 	print(players)
-	return {"maxScore":players[0]["score"], "topPlayers":players[0:3]}
+	return {"maxScore":players[0]["score"], "topPlayers":players}
 
 def getVictoryQuestions(roomid):
 	if not verifyRoom(roomid):
