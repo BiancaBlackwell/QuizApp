@@ -9,7 +9,6 @@ from werkzeug.datastructures import auth_property
 
 """How to use: flask run"""
 
-#cur.execute('''CREATE TABLE questions (id INTEGER PRIMARY KEY AUTOINCREMENT, question TEXT, answer_one TEXT, answer_two TEXT, answer_three TEXT, answer_four TEXT, correct_answer INT)''')
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'mysecret'
 app.debug = True
@@ -19,14 +18,11 @@ CORS(app)
 DATABASE = 'trivia.db'
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-values = {
-	'slider1':25,
-	'slider2':0, 
-}
 
 @app.route('/')
 def index():
-	return render_template('lobby.html',**values)
+	return render_template('lobby.html')
+
 
 #To Do: Add try-catches for any access to data
 #Handler for message recieved on 'connect' channel. Called after user has gotten id and roomid (successfully joined room)
@@ -35,45 +31,49 @@ def test_connect():
 	#JoinRoom function. Establish Socket Connection.
 	print(f"Socket Connected {request.sid}")
 
+
 #To Do: disconnect takes a minute to register on the backend once the page is closed
 #  maybe instead send a event when the component on the front end is going to be unmounted
 @socketio.on('disconnect')
 def test_disconnect():
 	#JoinRoom function. Establish Socket Connection.
-	socketid = request.sid
-	userid = getUseridFromSocketid(socketid)
-	roomid = getRoomidFromSocketid(socketid)
-	print(f"Socket Disconnected {socketid}")
+	print(f"Socket Disconnected {request.sid}")
+
 
 @socketio.on('identify')
 def identify(data):
 	#JoinRoom function. Add socketid to the user in the Users table. Broadcast update to users.
 	roomid = data["roomId"]
 	userid = data["userId"]
+	if not verifyUser(userid) or not verifyRoom(roomid):
+		return
+	print(f'Identifying User... Room ID: {data["roomId"]}')
+
 	socketid = request.sid
 	cur = get_db().cursor()
 
-	print(f'Identifying User... Room ID: {data["roomId"]}')
-
+	#Add the user to the socket's room and update the other players in that room
 	join_room(data["roomId"])
 	dbSetSocketId(userid, socketid)
 	emit('message', {"message":'Player ' + getNicknameFromUserid(userid) + ' has joined!', "userId":'server'}, broadcast=True, room=roomid)
 	emit('updatePlayers', getPlayers(roomid), broadcast=True, room=roomid)
 
+	#set up host if this is a new room and one doesn't exist
 	print(f'Checking for Host in room {roomid}')
 	query = f'SELECT hostid FROM rooms WHERE roomid = "{roomid}"'
 	cur.execute(query)
 	hostid = cur.fetchone()[0]
-	if(hostid == None):
+	if hostid == None:
 		print(f'No Host Found. Setting {userid} as Host.')
 		query2 = f'UPDATE rooms SET hostid = "{userid}" WHERE roomid = "{roomid}"'
 		cur.execute(query2)
-		print(f'New Host')
+		#tell the players's there's a new host (just the creator since this is a new room)
 		emit('newHost', {"userId":userid}, broadcast=True, room=roomid)
-		emit('start', broadcast=True, room=roomid)
+		#tell the host they can start the game (since the lobby just has one player, the host)
+		emit('yesStart', broadcast=True, room=roomid)
 	else:
-		emit('unstart', broadcast=True, room=roomid)
-
+		#tell the host he cannot start the game since another player was added to an existing room and therefore isn't ready
+		emit('noStart', broadcast=True, room=roomid)
 
 
 @socketio.on('sendMessage')
@@ -82,9 +82,13 @@ def recvMessage(data):
 	roomid = data["roomId"]
 	message = data["message"]
 	userid = data["userId"]
+	if not verifyUser(userid) or not verifyRoom(roomid):
+		return
 	print(f'Recieved Message for room "{roomid}": {message} from {userid}')
-	#emit('message', message, broadcast=True)
+
+	#emit the message to every player in the room grabbing the sender's nickname from the database
 	emit('message', {"message":message, "userId":getNicknameFromUserid(userid)}, broadcast=True, room=roomid)
+
 
 @socketio.on('nameChange')
 def nameChange(data):
@@ -92,6 +96,11 @@ def nameChange(data):
 	#Use first eight characters of userID for now
 	roomid = data["roomId"]
 	userid = data["userId"]
+	if not verifyUser(userid) or not verifyRoom(roomid):
+		return
+
+	# WIP
+
 
 @socketio.on('updateRoomSettings')
 def updateRoomSettings(data):
@@ -102,27 +111,38 @@ def updateRoomSettings(data):
 	#Room Settings...
 	numquestions = data["numquestions"]
 	categories = data["categories"]
+	if not verifyUser(userid) or not verifyRoom(roomid):
+		return
+	print(f'Updating Setting for Room {roomid} with ({numquestions}, {categories})')
 
-	if(isHost(userid,roomid)>0):
+	#ensure the host is the only one who can update the settings
+	if(isHost(userid,roomid)):
 		updateDBSettings(numquestions,categories,roomid)
+		#tell the players thee settings have changed. even non-hosts will have a component showing them the current settings
 		emit('updateRoomSettings', {"numquestions":numquestions, "categories":categories}, broadcast=True, room=roomid)
 	else:
 		print(f'ERROR: {userid} is not host.')
+
 
 @socketio.on('readyUser')
 def readyUser(data):
 	#ReadyButton function. Update counter in Rooms table, check room condition, broadcast update to room.
 	roomid = data["roomId"]
 	userid = data["userId"]
+	if not verifyUser(userid) or not verifyRoom(roomid):
+		return
 	print(f'Ready user {userid} in room {roomid}')
+
+	#update the player's ready status with True and tell the lobby, changing that player's background to green
 	result = dbUpdateReady(userid, roomid, True)
-	print(result)
-	if result == 1:
-		#All users are ready. Enables start button for host
-		emit('start', broadcast=True, room=roomid)
 	emit('updatePlayers', getPlayers(roomid), broadcast=True, room=roomid)
-	if(result == 2):
-		#Host Clicked Start Button. Initialize all questions in DB, get first question, broadcast to room.
+
+	#All users are ready. Enables start button for host
+	if result == 1:
+		emit('yesStart', broadcast=True, room=roomid)
+
+	#Host Clicked Start Button. Initialize all questions in DB, get first question, broadcast to room.
+	if result == 2:
 		dbResetReady(roomid)
 		fetchQuestions(roomid,userid)
 		firstquestion = getFirstQuestion(roomid)
@@ -135,38 +155,52 @@ def unreadyUser(data):
 	#ReadyButton function. Update counter in Rooms table, broadcast update to room.
 	roomid = data["roomId"]
 	userid = data["userId"]
+	if not verifyUser(userid) or not verifyRoom(roomid):
+		return
 	print(f'Unready user {userid} in room {roomid}')
+
+	#update the player's ready status with False and tell the lobby, changing that player's background to default, and telling the host they cannot start
 	dbUpdateReady(userid, roomid, False)
-	emit('unstart', broadcast=True, room=roomid)
+	emit('noStart', broadcast=True, room=roomid)
 	emit('updatePlayers', getPlayers(roomid), broadcast=True, room=roomid)
+
 
 @socketio.on('submitAnswer')
 def submitAnswer(data):
 	#UserGameState function. Update time recieved in list in Room table. Update answer submited in Rooms table. Check game condition (kill timer thread if met). 
 	#Emit update to user who sent you data (right/wrong), Update Points, Broadcast update to room.
-	#socket.emit("submitAnswer", {"roomId":props.roomId, "userId":props.userId, "answer":choice});
+	#frontend call: socket.emit("submitAnswer", {"roomId":props.roomId, "userId":props.userId, "answer":choice});
 	roomid = data["roomId"]
 	userid = data["userId"]
 	answerChoice = data["answer"]
+	if not verifyUser(userid) or not verifyRoom(roomid):
+		return
 	print(f'Recieved answer {answerChoice} from [{userid} in room {roomid}]')
+
 	#Check if user has answered before, return if so.
 	cur = get_db().cursor()
 	query = f'SELECT answered FROM users WHERE userid = "{userid}"'
 	cur.execute(query)
 	status = cur.fetchone()[0]
-	if(status == 1):
+	if status == 1:
 		print(f"user {userid} has already answered this question!")
 		return
+	
+	#check the player's answer and update score if correct, and update the other player's sidebars
 	validateAnswerChoice(roomid,userid,answerChoice)
+	emit('updatePlayers', getPlayers(roomid, True), broadcast=True, room=roomid)
+
 	#Set answered = true for userid
 	query1 = f'UPDATE users SET answered = 1 WHERE userid = "{userid}"'
 	cur.execute(query1)
-	emit('updatePlayers', getPlayers(roomid, True), broadcast=True, room=roomid)
+
 	#Check if all players have answered
 	questionstatus = checkAllPlayersAnswered(roomid)
-	if(questionstatus == True):
+	if questionstatus == True:
 		#go to next question
 		nextQuestion(roomid)
+
+
 """
 server: emits 'trivia' with the first question as data (check)
 
@@ -180,63 +214,66 @@ server: gets answer, adjusts score,
 --then emit 'displayNextQuestion' with the next question as data, 
 --if last question emit something to tell players to got to victory page, passing in victory stats as data.
 """
-
 def nextQuestion(roomid):
 	#GameState function. Spawn new timer thread, Broadcast update to room.
-	print("Getting next question")
 	incrementQuestionIndex(roomid)
-
 	questionlist = getQuestionList(roomid)
 	questionindex = getQuestionIndex(roomid)
 	maxquestions = getNumQuestions(roomid)
-	print("Getting next question1")
 
-	if(questionindex == maxquestions-1):
+	#if we've reached the last question
+	if questionindex == maxquestions-1:
 		#this would be a greaaaaaaat place to put a emit that puts the user on the victory screen
 		emit('outOfQuestions', {"podium":getVictoryStats(roomid), "questions":getVictoryQuestions(roomid)}, broadcast=True,roomid=roomid)
 		return
 
+	#grab the next question and display
 	nextquestionid = questionlist[questionindex]
 	mydict = getQuestionDetails(nextquestionid)
 	resetAllPlayersAnswered(roomid)
 	emit('displayNextQuestion',mydict, broadcast=True, room=roomid)
+
 
 @socketio.on('endGame')
 def endGame(data):
 	#GameState function. Verify all questions have been served. Update scores in Room table, Broadcast update to room.
 	roomid = data["roomId"]
 	userid = data["userId"]
+	if not verifyUser(userid) or not verifyRoom(roomid):
+		return
+
+	# WIP
+
 
 @socketio.on('returnLobby')
 def returnLobby(data):
 	#GameState function. Toggle 'in game' in Room table. Emit update to user who sent you data. Check reset lobby condition. Reset ready status to 0
 	roomid = data["roomId"]
 	userid = data["userId"]
+	if not verifyUser(userid) or not verifyRoom(roomid):
+		return
+
+	# WIP
+
 
 @socketio.on('disconnectUser')
 def disconnectUser(data):
 	#Disconnect function. Toggle 'connected' in user table. Broadcast update to room.
 	roomid = data["roomId"]
 	userid = data["userId"]
+	if not verifyUser(userid) or not verifyRoom(roomid):
+		return
 	print(f'Disconnecting Player {userid} from room {roomid}')
-	deleted = 0
 
+	#Check if disconnected user is the host, is so switch control
 	cur = get_db().cursor()
 	query = f'SELECT COUNT(hostid) FROM rooms WHERE hostid = "{userid}" AND roomid = "{roomid}"'
 	cur.execute(query)
 	count = cur.fetchone()[0]
-	if(count>0):
-		#Disconnected user is host
-		deleted = switch_host(roomid)
+	if count > 0:
+		switch_host(roomid)
 
-	"""if(deleted == 0):
-		#if the room still exists...
-		query1 = f'UPDATE rooms SET partysize = partysize - 1 AND numReady = numReady - 1 WHERE roomid = "{roomid}";'
-		cur.execute(query1)
-
-		query2 = f'UPDATE users SET connected = 0 AND isReady = 0 WHERE userid = "{userid}"'
-		cur.execute(query2)"""
-
+	#update the lobby and remove the user from the DB along with any dependencies
 	emit('message', {"message":'Player ' + getNicknameFromUserid(userid) + ' has disconnected!', "userId":'server'}, broadcast=True, room=roomid)
 	removeUser(userid)
 	emit('updatePlayers', getPlayers(roomid), broadcast=True, room=roomid)
@@ -247,6 +284,10 @@ def reconnectUser(data):
 	#Disconnect function. Toggle 'connected' in Room table. Broadcast update to room
 	roomid = data["roomId"]
 	userid = data["userId"]
+	if not verifyUser(userid) or not verifyRoom(roomid):
+		return
+
+	# WIP
 
 
 #####~~~~~~~~~~~~~~~ Questions ~~~~~~~~~~~~~~~#####
@@ -283,6 +324,7 @@ def createUser():
 	#Generate UserID (Randomly)
 	userid = str(uuid.uuid1())
 	print(userid)
+	
 	#Save it in the users table of the DB
 	db = get_db()
 	cur = db.cursor()
@@ -313,7 +355,6 @@ def joinRoom(userid, roomid):
 
 @app.route('/backend/createRoom')
 def createRoom():
-
 	#create a unique roomid
 	roomid = getRandomString(8)
 	while verifyRoom(roomid):
@@ -332,7 +373,6 @@ def createRoom():
 
 @app.route('/backend/removeRoom/<roomid>')
 def removeRoom(roomid):
-
 	#verify the room exists
 	if not verifyRoom(roomid):
 		abort(500)
@@ -352,7 +392,6 @@ def removeRoom(roomid):
 
 @app.route('/backend/removeUser/<userid>')
 def removeUser(userid):
-
 	#verify the room exists
 	if not verifyUser(userid):
 		abort(500)
@@ -371,10 +410,6 @@ def removeUser(userid):
 	query = f'UPDATE rooms SET partysize = partysize - 1 WHERE roomid = "{roomid}";'
 	cur.execute(query)
 
-	query = f'UPDATE rooms SET numReady = numReady - 1 FROM rooms INNER JOIN users ON rooms.roomid = users.roomid WHERE rooms.roomid = "{roomid}" AND users.isReady = 1 AND users.userid = "{userid}";'
-	cur.execute(query)
-
-
 	query = f'DELETE FROM rooms WHERE partysize = 0;'
 	cur.execute(query)
 
@@ -388,58 +423,59 @@ def removeUser(userid):
 #####~~~~~~~~~~~~~~~ Helper Methods ~~~~~~~~~~~~~~~#####
 
 
+#get a db object that we can use to access the database
 def get_db():
 	db = getattr(Flask, '_database', None)
 	if db is None:
 		db = Flask._database = sqlite3.connect(DATABASE, check_same_thread=False)
 	return db
 
+
+#gets a tuple containing the full question data for a question with a given id
 def getFromComplete(id, cur):
 	for row in cur.execute('SELECT * FROM complete WHERE id = ' + str(id)):
 		cur.close()
-		return id
+		return row
 		
 
+#verify that a userid exists in the DB
 def verifyUser(userid):
 	cur = get_db().cursor()
 	query = f'SELECT COUNT(userid) FROM users WHERE userid = "{userid}";'
 	cur.execute(query)
 	count = cur.fetchone()[0]
 	cur.close()
-	if count > 0:
-		return True
-	return False
+	return (count > 0)
 
+
+#verify that a roomid exists in the DB
 def verifyRoom(roomid):
 	cur = get_db().cursor()
 	query = f'SELECT COUNT(roomid) FROM rooms WHERE roomid = "{roomid}";'
 	cur.execute(query)
 	count = cur.fetchone()[0]
 	cur.close()
-	if count > 0:
-		return True
-	return False 
+	return (count > 0)
 
+
+#verify that a socketid exists in the DB
 def verifySocketid(socketid):
 	cur = get_db().cursor()
 	query = f'SELECT COUNT(socketid) FROM users WHERE socketid = "{socketid}";'
 	cur.execute(query)
 	count = cur.fetchone()[0]
 	cur.close()
-	if count > 0:
-		return True
-	return False 
+	return (count > 0)
 
+
+#returns a list of player objects containing the name, and isReady status, and possiibly scores for use in displaying the player sidebar
 def getPlayers(roomid, scores=False):
-	#verify the room exists
-	if not verifyRoom(roomid):
-		return {}
-
 	cur = get_db().cursor()
 	query = f'SELECT nickname, isReady, score FROM users WHERE roomid = "{roomid}";'
 	cur.execute(query)
 
 	players = []
+	#for each player in a room add them to the list with the requested info
 	for player in cur.fetchall():
 		if scores:
 			players.append({"name":player[0],"isReady":player[1], "score":player[2]})
@@ -448,12 +484,9 @@ def getPlayers(roomid, scores=False):
 	cur.close()
 	return players
 
-def dbUpdateReady(userid, roomid, isReady):
-	if not verifyUser(userid):
-		return
-	if not verifyRoom(roomid):
-		return
 
+#set the players ready status for 
+def dbUpdateReady(userid, roomid, isReady):
 	cur = get_db().cursor()
 	query = f'UPDATE users SET isReady = {1 if isReady else 0} WHERE userid = "{userid}" AND roomid = "{roomid}";'
 	cur.execute(query)
@@ -462,28 +495,21 @@ def dbUpdateReady(userid, roomid, isReady):
 	cur.close()
 	return checkReady(roomid)
 
-def checkReady(roomid):
-	if not verifyRoom(roomid):
-		return
 
+def checkReady(roomid):
 	cur = get_db().cursor()
 	query = f'SELECT partysize, numReady FROM rooms WHERE roomid = "{roomid}";'
 	cur.execute(query)
 	room = cur.fetchone()
 	cur.close()
-
-	print(room)
-
 	if(room[0] == room[1]):
 		return 2
 	if(room[0] == room[1] + 1):
 		return 1
 	return 0
 
-def dbResetReady(roomid):
-	if not verifyRoom(roomid):
-		return
 
+def dbResetReady(roomid):
 	cur = get_db().cursor()
 	query = f'UPDATE users SET isReady = 0 WHERE roomid = "{roomid}";'
 	cur.execute(query)
@@ -491,54 +517,44 @@ def dbResetReady(roomid):
 
 	
 def getNicknameFromUserid(userid):
-	if not verifyUser(userid):
-		return ""
-
 	cur = get_db().cursor()
 	query = f'SELECT nickname FROM users WHERE userid = "{userid}";'
 	cur.execute(query)
 	name = cur.fetchone()[0]
 	cur.close()
-
 	return name
 
-def dbSetSocketId(userid, socketid):
-	if not verifyUser(userid):
-		return 
 
+def dbSetSocketId(userid, socketid):
 	cur = get_db().cursor()
 	query = f'UPDATE users SET socketid = "{socketid}" WHERE userid = "{userid}";'
 	cur.execute(query)
 	cur.close()
 	
-def getUseridFromSocketid(socketid):
-	if not verifySocketid(socketid):
-		return ""
 
+def getUseridFromSocketid(socketid):
 	cur = get_db().cursor()
 	query = f'SELECT userid FROM users WHERE socketid = "{socketid}";'
 	cur.execute(query)
 	userid = cur.fetchone()[0]
 	cur.close()
-
 	return userid
 
-def getRoomidFromSocketid(socketid):
-	if not verifySocketid(socketid):
-		return ""
 
+def getRoomidFromSocketid(socketid):
 	cur = get_db().cursor()
 	query = f'SELECT roomid FROM users WHERE socketid = "{socketid}";'
 	cur.execute(query)
 	roomid = cur.fetchone()[0]
 	cur.close()
-
 	return roomid
+
 
 def getRandomString(length):
 	letters = string.ascii_lowercase + string.ascii_uppercase
 	result_str = ''.join(random.choice(letters) for i in range(length))
 	return result_str
+
 
 def switch_host(roomid):
 	#Handles disconnect user when user is host
@@ -546,7 +562,7 @@ def switch_host(roomid):
 	query = f'SELECT COUNT(userid) FROM users WHERE roomid = "{roomid}"'
 	cur.execute(query)
 	count = cur.fetchone()[0]
-	if(count>=2):
+	if count >= 2:
 		#switch host
 		query2 = f'SELECT userid FROM users WHERE roomid = "{roomid}" LIMIT 1'
 		cur.execute(query2)
@@ -555,29 +571,32 @@ def switch_host(roomid):
 		cur.execute(query3)
 		emit('newHost', {"userId":nextHost}, broadcast=True, room=roomid)
 		emit('message', {"message":'Player ' + getNicknameFromUserid(nextHost) + ' is now Host!', "userId":'server'}, broadcast=True, room=roomid)
+	cur.close()
 
 		
 def incrementRoom(roomid):
 	cur = get_db().cursor()
 	query = f'UPDATE rooms SET partysize = partysize + 1 WHERE roomid = "{roomid}"'
 	cur.execute(query)
+	cur.close()
+
 
 def updateDBSettings(numquestions,categories,roomid):
 	cur = get_db().cursor()
 	query = f'UPDATE rooms SET numquestions = "{numquestions}" AND categories = "{categories}" WHERE roomid = "{roomid}"'
 	cur.execute(query)
+	cur.close()
 	print(f"[UPDATE] Updated settings for {roomid}")
+
 
 def isHost(userid,roomid):
 	cur = get_db().cursor()
 	query = f'SELECT hostid FROM rooms WHERE roomid = "{roomid}"'
 	cur.execute(query)
 	hostid = cur.fetchone()[0]
+	cur.close()
+	return (hostid == userid)
 
-	if(hostid == userid):
-		return 1
-	else:
-		return 0
 
 def changeGameState(roomid):
 	#Toggles current ingame state. 0 = not in game, 1 = in game
@@ -589,6 +608,8 @@ def changeGameState(roomid):
 	ingame = abs(ingame - 1)
 	query1 = f'UPDATE rooms SET ingame = "{ingame}" WHERE roomid = "{roomid}"'
 	cur.execute(query1)
+	cur.close()
+
 
 def storeQuestionList(questionlist,roomid):
 	#Given a question list, stores it in the DB (in both full list and nextQuestionList)
@@ -598,7 +619,9 @@ def storeQuestionList(questionlist,roomid):
 	cur = get_db().cursor()
 	query = f'UPDATE rooms SET questionlist = "{mylist}" WHERE roomid = "{roomid}"'
 	cur.execute(query)
+	cur.close()
 	print(f"SETTING QUESTION LIST FOR ROOM TO : {mylist}")
+
 
 def fetchQuestions(roomid, userid):
 	#Fetch Questions
@@ -609,9 +632,10 @@ def fetchQuestions(roomid, userid):
 	changeGameState(roomid)
 	print(f"Fetching questions for Room {roomid}")
 	for i in range(count):
-		newquestion = getQuestion()
+		newquestion = getRandomQuestionId()
 		questionlist.append(newquestion)
 	storeQuestionList(questionlist,roomid)
+
 
 def getQuestionDetails(nextquestionid):
 	#Gets details of a single question returns in dict
@@ -620,13 +644,14 @@ def getQuestionDetails(nextquestionid):
 	query = f'SELECT * FROM complete WHERE id = "{nextquestionid}"'
 	cur.execute(query)
 	row = cur.fetchone()
+	cur.close()
 	question = row[1]
 	answers = []
 	TFcount = 0
 	for i in range(4):
 		newans = row[i+2]
 		if TFcount == 2:
-			break;
+			break
 		if(newans == "False" or newans == "True" or newans == "Yes" or newans == "No"):
 			TFcount = TFcount + 1
 		answers.append(newans)
@@ -635,20 +660,24 @@ def getQuestionDetails(nextquestionid):
 	print(F"THESE ARE THE ANSWERSSSSSSSS: {answers}")
 	return mydict
 
+
 def getNumQuestions(roomid):
 	cur = get_db().cursor()
 	query = f'SELECT numquestions FROM rooms WHERE roomid = "{roomid}"'
 	cur.execute(query)
 	count = cur.fetchone()[0]
+	cur.close()
 	return count
+
 
 def getFirstQuestion(roomid):
 	#Special call for when the lobby starts.
-	questionindex = 0
 	cur = get_db().cursor()
 	query = f'SELECT questionlist FROM rooms WHERE roomid = "{roomid}"'
 	cur.execute(query)
 	questionlist = cur.fetchone()[0]
+	cur.close()
+
 	print(f"MY QUESTION STRING IS: {questionlist}")
 	mylist = list(questionlist.split(" "))
 	print(f"MY QUESTION LIST IS: {mylist}")
@@ -656,10 +685,13 @@ def getFirstQuestion(roomid):
 	mydict = getQuestionDetails(mylist[0])
 	return mydict
 
+
 def incrementQuestionIndex(roomid):
 	cur = get_db().cursor()
 	query = f'UPDATE rooms SET questionindex = questionindex + 1 WHERE roomid = "{roomid}"'
 	cur.execute(query)
+	cur.close()
+
 
 def validateAnswerChoice(roomid,userid,answerChoice):
 	#get questionid from questionlist and questionindex in rooms, then lookup in complete for the correct answer and check. If correct, update score. if not, don't.
@@ -672,16 +704,18 @@ def validateAnswerChoice(roomid,userid,answerChoice):
 	questionindex = row[1]
 	answer = getQuestionAnswer(questionlist[questionindex])
 
-	print(f'User enntered {answerChoice} the Correct Answer is: {answer}')
+	print(f'User entered {answerChoice} the Correct Answer is: {answer}')
 
 	if(answer == answerChoice):
+		#Update points
 		print('Updating Score')
-		#update points
 		query2 = f'UPDATE users SET score = score + 1 WHERE userid = "{userid}"'
 		cur.execute(query2)
+		cur.close()
 		return True
-	else:
-		return False
+	cur.close()
+	return False
+
 
 def getQuestionAnswer(questionid):
 	#gets answer to the question given the id in complete
@@ -689,7 +723,9 @@ def getQuestionAnswer(questionid):
 	query = f'SELECT correct_answer FROM complete WHERE id = "{questionid}"'
 	cur.execute(query)
 	answer = cur.fetchone()[0]
+	cur.close()
 	return answer
+
 
 def checkAllPlayersAnswered(roomid):
 	#checks if everyone in a room (and connected) has answered the question. if they have return true.
@@ -701,11 +737,12 @@ def checkAllPlayersAnswered(roomid):
 	query2 = f'SELECT COUNT(userid) FROM users WHERE roomid = "{roomid}" AND connected = 1 AND answered = 1'
 	cur.execute(query2)
 	countanswered = cur.fetchone()[0]
+	cur.close()
 	print(f"THIS IS HOW MANY PEOPLE HAVE ANSSWWWEEERRRED {countanswered}")
 	if(countconnected == countanswered):
 		return True
-	else:
-		return False
+	return False
+
 
 def getQuestionList(roomid):
 	#checks the questionlist from DB for rooms, returns it as a list
@@ -713,40 +750,41 @@ def getQuestionList(roomid):
 	query = f'SELECT questionlist FROM rooms WHERE roomid = "{roomid}"'
 	cur.execute(query)
 	questionstr = cur.fetchone()[0]
+	cur.close()
 	questionlist = list(questionstr.split(" "))	
 	return questionlist
+
 
 def getQuestionIndex(roomid):
 	cur = get_db().cursor()
 	query = f'SELECT questionindex FROM rooms WHERE roomid = "{roomid}"'
 	cur.execute(query)
 	questionindex = cur.fetchone()[0]
+	cur.close()
 	return questionindex
+
 
 def resetAllPlayersAnswered(roomid):
 	cur = get_db().cursor()
 	query = f'UPDATE users SET answered = 0 WHERE roomid = "{roomid}"'
 	cur.execute(query)
+	cur.close()
+
 
 def getVictoryStats(roomid):
-	if not verifyRoom(roomid):
-		return
-
 	players = getPlayers(roomid, True)
-	print(players)
 	players = sorted(players, key = lambda name: name['score'])
 	list.reverse(players)
 	players = players[0:3]
-	temp = players[1]
-	players[1] = players[0]
-	players[0] = temp
-	print(players)
-	return {"maxScore":players[0]["score"], "topPlayers":players}
+	maxScore = players[0]["score"]
+	if len(players) == 3:
+		temp = players[1]
+		players[1] = players[0]
+		players[0] = temp
+	return {"maxScore":maxScore, "topPlayers":players}
+
 
 def getVictoryQuestions(roomid):
-	if not verifyRoom(roomid):
-		return
-
 	victoryList = []
 	for qid in getQuestionList(roomid):
 		question = getQuestionDetails(qid)
@@ -754,6 +792,11 @@ def getVictoryQuestions(roomid):
 		victoryList.append(question)
 	return victoryList
 
+def getRandomQuestionId():
+	cur = get_db().cursor()
+	cur.execute('SELECT COUNT(id) FROM complete')
+	size = cur.fetchone()[0]
+	return random.randint(1, size-1)
 
 if __name__ == '__main__':
 	socketio.run(app)	

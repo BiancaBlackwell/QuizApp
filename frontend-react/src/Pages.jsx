@@ -115,9 +115,9 @@ function GameStateHandler(props) {
   const [messages, setMessages] = useState([]);
   const [players, setPlayers] = useState([]);
   const [amHost, setAmHost] = useState(false);
-  const [start, setStart] = useState(false);
+  const [canStart, setCanStart] = useState(false);
   const [question, setQuestion] = useState({});
-  const [victory, setVictory] = useState([]);
+  const [victoryStats, setVictoryStats] = useState([]);
 
   // since anyone can click this link we cannot rely on the userId prop being filled here
   const [userId, setUserId] = useState(() => {
@@ -160,14 +160,14 @@ function GameStateHandler(props) {
       setPlayers(players);
     });
 
-    socket.on("start", () => {
-      console.log("starting");
-      setStart(true);
+    socket.on("yesStart", () => {
+      console.log("Host can now start the game!");
+      setCanStart(true);
       //socket.emit("startGame", {"roomId":roomId, "userId":userId});
     });
-    socket.on("unstart", () => {
-      console.log("unstart");
-      setStart(false);
+    socket.on("noStart", () => {
+      console.log("Not enough players ready to start the game!");
+      setCanStart(false);
       //socket.emit("startGame", {"roomId":roomId, "userId":userId});
     });
 
@@ -185,21 +185,15 @@ function GameStateHandler(props) {
 
     socket.on("displayNextQuestion", mydict =>{
       console.log("Displaying the Next Question");
-      console.log(mydict);
+      //console.log(mydict);
       setQuestion(mydict);
     });
 
-    socket.on("recieved", () => {
-      console.log("recieved");
-    });
-
-    socket.on("outOfQuestions", victory =>{
-      console.log("End of Round! Displaying Victory Page");
-
-      console.log(victory);
-
-      setVictory(victory);
-      setCurrentPage("victory")
+    socket.on("outOfQuestions", victoryStats =>{
+      console.log("End of Round! Displaying Victory Page!");
+      //console.log(victory);
+      setVictoryStats(victoryStats);
+      setCurrentPage("victory");
 
     });
 
@@ -248,9 +242,9 @@ ONLY WANTS TO TRIGGER SOMETIMES
   return (
     <div>
       <div>{roomId}</div>
-      {currentPage === "lobby" && <Lobby userId = {userId} roomId = {roomId} messages={messages} players={players} amHost={amHost} start={start}/>}
+      {currentPage === "lobby" && <Lobby userId = {userId} roomId = {roomId} messages={messages} players={players} amHost={amHost} canStart={canStart}/>}
       {currentPage === "trivia" && <Trivia userId = {userId} roomId = {roomId} players={players} question= { question }/>}
-      {currentPage === "victory" && <Victory userId = {userId} roomId = {roomId} players={players} toLobby={toLobby} victory={victory}/>}
+      {currentPage === "victory" && <Victory userId = {userId} roomId = {roomId} players={players} toLobby={toLobby} victoryStats={victoryStats}/>}
     </div>
   )
 }
@@ -258,7 +252,7 @@ ONLY WANTS TO TRIGGER SOMETIMES
 
 
 // can use destructuring here to be more explict abt what we pass as props
-function Lobby({userId, roomId, messages, players, amHost, start}) {
+function Lobby({userId, roomId, messages, players, amHost, canStart}) {
 
   const [message, setMessage] = useState("");
   const [ready, setReady] = useState(false);
@@ -272,17 +266,15 @@ function Lobby({userId, roomId, messages, players, amHost, start}) {
   // On Click
   const onClick = () => {
     if (message === "") {
-      alert("Please Add A Message");
       return;
     }
-
     console.log('Sending message: [' + message + '] to room ' + roomId);
     socket.emit("sendMessage", {"roomId":roomId, "message":message, "userId":userId});
     setMessage("");
   };
 
   const toggleReady = () => {
-    if(!amHost || (amHost && start)){
+    if(!amHost || (amHost && canStart)){
       let toggle = !ready;
       console.log('Toggling ready state to: ' + toggle);
       socket.emit(toggle?"readyUser":"unreadyUser", {"roomId":roomId, "message":message, "userId":userId});
@@ -293,7 +285,7 @@ function Lobby({userId, roomId, messages, players, amHost, start}) {
 
   const checkEnter = (event) => {
     if (event.key === 'Enter') {
-      onClick()
+      onClick();
     }
   }
 
@@ -627,7 +619,7 @@ function VictoryQuestions(props) {
 }
 
 
-function Victory({players, toLobby, victory}) {
+function Victory({players, toLobby, victoryStats}) {
 
   const handleClick = () => {
     toLobby();
@@ -646,14 +638,14 @@ function Victory({players, toLobby, victory}) {
 
         <div className="col-xs-12" style={{height: "20px"}}>
 
-          <VictoryPodium podium={ victory.podium }/>
+          <VictoryPodium podium={ victoryStats.podium }/>
           
           <br/>
 
           <button type="submit" className="btn btn-dark text-nowrap w-75"onClick={ handleClick }>Return to Lobby</button>
           <div className="col-xs-12" style={{height: "20px"}}></div> 
 
-          <VictoryQuestions questions = {victory.questions}/>
+          <VictoryQuestions questions = {victoryStats.questions}/>
 
         </div>
       </div>
