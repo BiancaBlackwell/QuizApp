@@ -282,7 +282,7 @@ def createUser():
 	#Save it in the users table of the DB
 	db = get_db()
 	cur = db.cursor()
-	query = f'INSERT INTO users VALUES (null, "{userid}", null, null, "{userid[0:8]}", 0, 0, 0, 0);'
+	query = f'INSERT INTO users VALUES (null, "{userid}", null, null, "{userid[0:8]}", 0, 0, 1, 0);'
 	cur.execute(query)
 
 	cur.close()
@@ -685,9 +685,11 @@ def checkAllPlayersAnswered(roomid):
 	query = f'SELECT COUNT(userid) FROM users WHERE roomid = "{roomid}" AND connected = 1'
 	cur.execute(query)
 	countconnected = cur.fetchone()[0]
+	print(f"THIS IS HOW MANY PEOPLE ARE CONNECTED {countconnected}")
 	query2 = f'SELECT COUNT(userid) FROM users WHERE roomid = "{roomid}" AND connected = 1 AND answered = 1'
 	cur.execute(query2)
 	countanswered = cur.fetchone()[0]
+	print(f"THIS IS HOW MANY PEOPLE HAVE ANSSWWWEEERRRED {countanswered}")
 	if(countconnected == countanswered):
 		return True
 	else:
