@@ -199,22 +199,26 @@ function GameStateHandler(props) {
     // passing an empty array to useEffect makes it run once when the component is mounted
   }, []);
 
+
+  /*
+
+******************************
+ATTEMPTED DISSCONNECT STUFF
+*******************************
+ONLY WANTS TO TRIGGER SOMETIMES
+
+
   // this also doesn't work
   const onDisconnect = (e) => {
     e.preventDefault();
     e.returnValue = ""
     console.log("Disconnecting User");
-    timeout(5000); //for 5 sec delay
-    console.log("Disconnecting User555");
     //socket.emit("disconnectUser", {"roomId":roomId, "userId":userId});
     socket.emit("sendMessage", {"roomId":roomId, 'message':'hey', "userId":userId});
     //socket.removeAllListeners();
     //socket.disconnect();
   }
 
-  function timeout(delay) {
-    return new Promise( res => setTimeout(res, delay) );
-}
 
   useEffect(() => {
     // this also doesn't work
@@ -223,7 +227,7 @@ function GameStateHandler(props) {
       window.removeEventListener('beforeunload', onDisconnect);
     }
   }, [onDisconnect]);
-
+*/
 
 
   const toLobby = () => {
@@ -612,7 +616,7 @@ function VictoryQuestions(props) {
 }
 
 
-function Victory({players, toLobby}) {
+function Victory({players, toLobby, podium}) {
 
   const handleClick = () => {
     toLobby();
@@ -631,7 +635,7 @@ function Victory({players, toLobby}) {
 
         <div className="col-xs-12" style={{height: "20px"}}>
 
-          <VictoryPodium maxScore={89} topPlayers={[{"name":"Abe Abbleton", "score":57}, {"name":"Bob Bobbington", "score":89}, {"name":"Bubbles", "score":50}]}/>
+          <VictoryPodium podium={ podium }/>
           
           <br/>
 
@@ -647,7 +651,7 @@ function Victory({players, toLobby}) {
 )
 }
 
-function VictoryPodium(props){
+function VictoryPodium({podium}){
 
   console.log()
 
@@ -655,11 +659,11 @@ function VictoryPodium(props){
     <div className="row">
 
     <div className="row">
-      { props.topPlayers && props.topPlayers.map((player, ind) => {
+      { podium.topPlayers && podium.topPlayers.map((player, ind) => {
         return(
           <div className="col align-self-end" key={ind}>
           <div className="card player">
-            <div className="col-xs-12" style={{height: Math.round(player.score / props.maxScore * 100)+"px"}}></div>
+            <div className="col-xs-12" style={{height: Math.round(player.score / podium.maxScore * 100)+"px"}}></div>
             <h5 className="card-title mb-0">{player.name}</h5>
             <p className="card-text">{player.score} pts.</p>
           </div>
