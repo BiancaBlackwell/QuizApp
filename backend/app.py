@@ -117,13 +117,14 @@ def readyUser(data):
 	result = dbUpdateReady(userid, roomid, True)
 	print(result)
 	if result == 1:
-		#Enables start button for host
+		#All users are ready. Enables start button for host
 		emit('start', broadcast=True, room=roomid)
 	if(result == 2):
-		#Starts the trivia game
+		#Host Clicked Start Button. Initialize all questions in DB, get first question, broadcast to room.
 		dbResetReady(roomid)
 		fetchQuestions(roomid,userid)
-		emit("trivia", broadcast=True, room=roomid)
+		firstquestion = getFirstQuestion(roomid)
+		emit("trivia", firstquestion, broadcast=True, room=roomid)
 	emit('updatePlayers', getPlayers(roomid), broadcast=True, room=roomid)
 
 @socketio.on('unreadyUser')
@@ -144,6 +145,20 @@ def submitAnswer(data):
 	userid = data["userId"]
 	answerChoice = data["answer"]
 	print(f'Recieved answer {answerChoice} from [{userid} in room {roomid}]')
+
+"""
+server: emits 'trivia' with the first question as data (check)
+
+client: sets question and changes page to trivia
+
+client: emits 'submitAnswer' with their answer
+
+server: gets answer, adjusts score, 
+--emits 'updateplayers' to adjust on clients (we can do this on each answer to be more real time or at the end of the round), 
+--waits for everyone to answer, by checking a counter incrementing in the DB similar to ready, once everyone's answered (could update scores here at the end of round) 
+--then emit 'displayNextQuestion' with the next question as data, 
+--if last question emit something to tell players to got to victory page, passing in victory stats as data.
+"""
 
 @socketio.on('nextQuestion')
 def nextQuestion(data):
@@ -284,7 +299,7 @@ def createRoom():
 	#add room to database
 	db = get_db()
 	cur = db.cursor()
-	query = f'INSERT INTO rooms VALUES ("{roomid}", 0, 0, null, 10, "",0,"","");'
+	query = f'INSERT INTO rooms VALUES ("{roomid}", 0, 0, null, 10, "",0,"",0);'
 	cur.execute(query)
 
 	# close cursor and commit change
@@ -601,7 +616,21 @@ def getNumQuestions(roomid):
 	count = cur.fetchone()[0]
 	return count
 
+def getFirstQuestion(roomid):
+	#Special call for when the lobby starts.
+	questionindex = 0
+	cur = get_db().cursor()
+	query = f'SELECT questionlist FROM rooms WHERE roomid = "{roomid}"'
+	cur.execue(query)
+	questionlist = cur.fetchone()[0]
+	mylist = list(questionlist.split(" "))
+	mydict = getQuestionDetails(mylist[0])
+	incrementQuestionIndex(roomid)
+	return mydict
 
+def incrementQuestionIndex(roomid):
+	cur = get_db().cursor()
+	query = f'UPDATE rooms SET questionindex = questionindex + 1 WHERE roomid = "{roomid}"'
 
 if __name__ == '__main__':
 	socketio.run(app)	
