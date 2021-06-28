@@ -1,14 +1,19 @@
 import "./Pages.css";
 import axios from "axios";
 import { Redirect, useParams } from "react-router-dom";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import socket from "./socket";
 
 const BACKEND_URL = "http://localhost:5000"
+
 
 function Landing() {
   const [userRoomId, setUserRoomId] = useState({userId: undefined, roomId: undefined});
   const [redirectToLobby, setRedirectToLobby] = useState(false);
-  const [createButtonEnabled, setCreateButtonEnabled] = useState(true);
+  const [buttonEnabled, setButtonEnabled] = useState(true);
+  const [joinButtonEnabled, setJoinButtonEnabled] = useState(true);
+  const [lobbyCode, setlobbyCode] = useState("");
+
 
   // this effect gets run whenever userRoomId gets updated (because it's in the array we provide as an argument) -- in this case, after we get it from the backend in createAndJoinRoom
   useEffect(() => {
@@ -23,10 +28,34 @@ function Landing() {
     }
   }, [userRoomId])
 
+  // On Change
+  const onChange = e => {
+    setlobbyCode(e.target.value);
+  };
+
+  const checkEnter = (event) => {
+    if (event.key === 'Enter') {
+      joinRoom()
+    }
+  }
+
+  async function joinRoom(){
+    // disable the create button while we're loading
+    setButtonEnabled(false);
+    console.log('Creating User');
+    let createUserResponse = await axios.get(`${BACKEND_URL}/backend/createUser`);
+    console.log('Joining Room' + lobbyCode);
+
+    // all we need to do here is set the state, the effect handles the join and redirect
+    setUserRoomId({roomId: lobbyCode, userId: createUserResponse.data});
+  };
+
   async function createAndJoinRoom(){
     // disable the create button while we're loading
-    setCreateButtonEnabled(false);
+    setButtonEnabled(false);
+    console.log('Creating User');
     let createUserResponse = await axios.get(`${BACKEND_URL}/backend/createUser`);
+    console.log('Creating Room');
     let createRoomResponse = await axios.get(`${BACKEND_URL}/backend/createRoom`);
     
     // all we need to do here is set the state, the effect handles the join and redirect
@@ -43,22 +72,30 @@ function Landing() {
       <div className="row align-items-center justify-content-center m-3">
         <div className="col-3">
           <div className="input-group">
-          <input type="text" className="form-control text-nowrap" placeholder="Lobby Code" />
+          <input type="text" className="form-control text-nowrap" placeholder="Lobby Code" onChange={e => onChange(e)} onKeyPress={ checkEnter } />
             <div className="input-group-btn">
-              <button type="submit" className="btn btn-dark text-nowrap form-control" style={{width: "auto"}}>Join</button>
+              <button type="submit" enabled = {buttonEnabled.toString()} className="btn btn-dark text-nowrap form-control" style={{width: "auto"}} onClick={ joinRoom } >Join</button>
+              
+              {redirectToLobby && <Redirect to={{
+                pathname:`/game/${userRoomId.roomId}`, 
+                state: { userId: userRoomId.userId } // this is accessed with props.location.state.userId in the lobby component. fine to pass as a prop b/c it won't change
+                }} 
+              />}
+
             </div>
           </div>
         </div>
       </div>
       <div className="row text-center">
         <div className="col">
-          <button type="submit" enabled = {createButtonEnabled.toString()} className="btn btn-dark text-nowrap" onClick={ createAndJoinRoom }>Create</button>
+          <button type="submit" enabled = {buttonEnabled.toString()} className="btn btn-dark text-nowrap" onClick={ createAndJoinRoom }>Create</button>
 
           {redirectToLobby && <Redirect to={{
               pathname:`/game/${userRoomId.roomId}`, 
               state: { userId: userRoomId.userId } // this is accessed with props.location.state.userId in the lobby component. fine to pass as a prop b/c it won't change
             }} 
           />}
+
         </div>
       </div>
     </div>
@@ -66,6 +103,7 @@ function Landing() {
 }
 
 function GameStateHandler(props) {
+
   // NOTE: this component is where we'll do all the fancy webhook stuff
   // and pass the results to the children
 
@@ -74,6 +112,12 @@ function GameStateHandler(props) {
   // track what part of the game UI we want to display
   // this should be either lobby, game, or victory
   const [currentPage, setCurrentPage] = useState("lobby");
+  const [messages, setMessages] = useState([]);
+  const [players, setPlayers] = useState([]);
+  const [amHost, setAmHost] = useState(false);
+  const [start, setStart] = useState(false);
+  const [question, setQuestion] = useState({});
+  const [victory, setVictory] = useState([]);
 
   // since anyone can click this link we cannot rely on the userId prop being filled here
   const [userId, setUserId] = useState(() => {
@@ -88,66 +132,231 @@ function GameStateHandler(props) {
 
   // handle creating the userId if the person came here by clicking the link
   useEffect(() => {
+
     if(userId === undefined){
       axios.get(`${BACKEND_URL}/backend/createUser`).then((createUserResponse) => {
-        if (createUserResponse.status === 200) {
-          setUserId(createUserResponse.data);
-        } else {
-          alert("wasn't able to create your userId, sorry!");
+        if (createUserResponse.status !== 200) {
+          alert("Wasn't able to create your userId, sorry!");
+          return;
         }
+
+        setUserId(createUserResponse.data);
       });
     }
+
+    //socket = io.connect(`${SOCKET_URL}`);
+
+    socket.on("message", msg => {
+      console.log('Recieved message: [' + msg.message + '] from ' + msg.userId);
+      let allMessages = messages;
+      allMessages.push(msg);
+      setMessages([...allMessages]);
+    });
+
+    socket.on("updatePlayers", players => {
+      console.log('Updating Players');
+      console.log(players);
+
+      setPlayers(players);
+    });
+
+    socket.on("start", () => {
+      console.log("starting");
+      setStart(true);
+      //socket.emit("startGame", {"roomId":roomId, "userId":userId});
+    });
+    socket.on("unstart", () => {
+      console.log("unstart");
+      setStart(false);
+      //socket.emit("startGame", {"roomId":roomId, "userId":userId});
+    });
+
+    socket.on("newHost", host => {
+      console.log("New Host is " + host.userId);
+      if(userId === host.userId)
+        setAmHost(true);
+    });
+
+    socket.on("trivia", firstquestion => {
+      console.log("********************TRIVIA********************");
+      setQuestion(firstquestion);
+      setCurrentPage("trivia");
+    });
+
+    socket.on("displayNextQuestion", mydict =>{
+      console.log("Displaying the Next Question");
+      console.log(mydict);
+      setQuestion(mydict);
+    });
+
+    socket.on("recieved", () => {
+      console.log("recieved");
+    });
+
+    socket.on("outOfQuestions", victory =>{
+      console.log("End of Round! Displaying Victory Page");
+
+      console.log(victory);
+
+      setVictory(victory);
+      setCurrentPage("victory")
+
+    });
+
+    socket.emit("identify", {"roomId": roomId, "userId":userId});
+
+
+
     // passing an empty array to useEffect makes it run once when the component is mounted
   }, []);
 
 
+  /*
+
+******************************
+ATTEMPTED DISSCONNECT STUFF
+*******************************
+ONLY WANTS TO TRIGGER SOMETIMES
+
+
+  // this also doesn't work
+  const onDisconnect = (e) => {
+    e.preventDefault();
+    e.returnValue = ""
+    console.log("Disconnecting User");
+    //socket.emit("disconnectUser", {"roomId":roomId, "userId":userId});
+    socket.emit("sendMessage", {"roomId":roomId, 'message':'hey', "userId":userId});
+    //socket.removeAllListeners();
+    //socket.disconnect();
+  }
+
+
+  useEffect(() => {
+    // this also doesn't work
+    window.addEventListener('beforeunload', onDisconnect);
+   return () => {
+      window.removeEventListener('beforeunload', onDisconnect);
+    }
+  }, [onDisconnect]);
+*/
+
+
+  const toLobby = () => {
+    setCurrentPage('lobby');
+  }
+
   return (
     <div>
       <div>{roomId}</div>
-      {currentPage === "lobby" && <Lobby userId = {userId} roomId = {roomId} />}
-      {currentPage === "trivia" && <Trivia userId = {userId} roomId = {roomId} />}
-      {currentPage === "victory" && <Victory userId = {userId} roomId = {roomId} />}
+      {currentPage === "lobby" && <Lobby userId = {userId} roomId = {roomId} messages={messages} players={players} amHost={amHost} start={start}/>}
+      {currentPage === "trivia" && <Trivia userId = {userId} roomId = {roomId} players={players} question= { question }/>}
+      {currentPage === "victory" && <Victory userId = {userId} roomId = {roomId} players={players} toLobby={toLobby} victory={victory}/>}
     </div>
   )
 }
 
+
+
 // can use destructuring here to be more explict abt what we pass as props
-function Lobby({userId, roomId}) {
-  
-  console.log(userId);
-  
+function Lobby({userId, roomId, messages, players, amHost, start}) {
+
+  const [message, setMessage] = useState("");
+  const [ready, setReady] = useState(false);
+  const [colors, setColor] = useState({"backgroundColor":"#464866"});
+
+  // On Change
+  const onChange = e => {
+    setMessage(e.target.value);
+  };
+
+  // On Click
+  const onClick = () => {
+    if (message === "") {
+      alert("Please Add A Message");
+      return;
+    }
+
+    console.log('Sending message: [' + message + '] to room ' + roomId);
+    socket.emit("sendMessage", {"roomId":roomId, "message":message, "userId":userId});
+    setMessage("");
+  };
+
+  const toggleReady = () => {
+    if(!amHost || (amHost && start)){
+      let toggle = !ready;
+      console.log('Toggling ready state to: ' + toggle);
+      socket.emit(toggle?"readyUser":"unreadyUser", {"roomId":roomId, "message":message, "userId":userId});
+      setColor(toggle?{"backgroundColor":"#25274d"}:{"backgroundColor":"#464866"});
+      setReady(toggle);
+    }
+  };
+
+  const checkEnter = (event) => {
+    if (event.key === 'Enter') {
+      onClick()
+    }
+  }
+
   return (
 
     <div className="coontainer-fluid">
       <div className="row">
-        <PlayerSidebar />
+        <PlayerSidebar players={players}/>
 
         <div className="col-10">
 
           <br/>
           <h1 className="lobby-heading text-center text-middle">Main Lobby</h1>
-          <p className="uid text-center" id="uid">1 </p>
+          <p className="uid text-center" id="uid">{userId} {amHost?"*****":""} </p>
 
           <br/><br/><br/>
-          <div className="row">
 
-            <div className="col-6 align-items-center justify-content-center">
+
+          
+          <div className="row">
+  
+            <div className="col-6">
 
               <div className="row message_holder" style={{textAlign: "left"}}>
-                <h3 className="message_placeholder">No message yet..</h3>
+                <div>
+                  { messages.length === 0 && <h3 className="message_placeholder">No message yet..</h3> }
+
+                  {messages.length > 0 && messages.map( (msg, ind) => {
+                    if(msg.userId === "server"){
+                      return (
+                        <div key={ind}>
+                          <b>{msg.message}</b>
+                      </div>
+                      )
+                    }
+                    else{
+                      return (
+                        <div key={ind}>
+                          {msg.userId}: {msg.message}
+                        </div>
+                      )
+                     
+                    }
+                  
+                  })
+                }
+                </div>
               </div>
 
               <div className="input-group">
-                <input type="text" className="text-nowrap form-control message" style={{fontSize: "18px", placeholder:"Message"}} />
-                <button type="submit" className="btn btn-dark text-nowrap" onclick="sendMessage()">Send</button>
+                <input type="text" className="text-nowrap form-control message" style={{fontSize: "18px", placeholder:"Message"}} value={message} name="message" onChange={e => onChange(e)} onKeyPress={ checkEnter }  />
+                <button type="submit" className="btn btn-dark text-nowrap" onClick={() => onClick()}>Send</button>
               </div>
 
               <br/>
               <div style={{textAlign: "center"}}>
-                <button type="submit" className="btn btn-dark text-nowrap w-25" onclick="location.href = '/trivia';">Ready</button>
+                <button type="submit" className="btn btn-dark text-nowrap" onClick={() => toggleReady() } style={{backgroundColor:colors.backgroundColor}}>{amHost?'Start':'Ready'}</button>
               </div>
 
             </div>
+
+
+
 
             <div className="col-5" style={{marginLeft: "15px"}}>
 
@@ -168,47 +377,47 @@ function Lobby({userId, roomId}) {
                 <div className="col">
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckDefault">Animals</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Animals</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckChecked">Brain Teasers</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Brain Teasers</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckDefault">Celebrities</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Celebrities</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckChecked">Entertainment</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Entertainment</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckDefault">For Kids</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckDefault">For Kids</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckChecked">General</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckChecked">General</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckDefault">Geography</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Geography</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckChecked">History</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckChecked">History</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckDefault">Hobbies</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Hobbies</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckChecked">Humanities</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Humanities</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckDefault">Literature</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Literature</label>
                   </div>
 
                 </div>
@@ -216,47 +425,47 @@ function Lobby({userId, roomId}) {
                 <div className="col">
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckChecked">Movies</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Movies</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckDefault">Music</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Music</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckChecked">Newest</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Newest</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckDefault">People</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckDefault">People</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckChecked">Rated</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Rated</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckDefault">Religion/Faith</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Religion/Faith</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckChecked">Science/Technology</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Science/Technology</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckDefault">Sports</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Sports</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckChecked">Television</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Television</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckDefault">Video Games</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Video Games</label>
                   </div>
                   <div className="form-check">
                     <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" for="flexSwitchCheckChecked">World</label>
+                    <label className="form-check-label" htmlFor="flexSwitchCheckChecked">World</label>
                   </div>
                 </div>
 
@@ -282,14 +491,14 @@ function PlayerSidebar(props) {
         // so we should not expect it to always have a score
         if(player.score){
           return (
-          <div className="player card mb-2" key = {ind}>
+          <div className="player card mb-2" key = {ind} style={{backgroundColor: (player.isReady?"#2ec949":"#85c3cf") }}>
             <h5 className="card-title mb-0">{player.name}</h5>
             <p className="card-text">{player.score} pts.</p>
           </div>)
 
         } else {
           return (
-          <div className="player card mb-2" key = {ind}>
+          <div className="player card mb-2" key = {ind} style={{backgroundColor: (player.isReady?"#2ec949":"#85c3cf") }}>
             <h5 className="card-title mb-0">{player.name}</h5>
           </div>)
         }
@@ -298,19 +507,27 @@ function PlayerSidebar(props) {
   </div>;
 }
 
-function Trivia() {
+function Trivia({userId, roomId, players, question}) {
+
   return (
     <div className="coontainer-fluid">
       <div className="row">
-        <PlayerSidebar />
-        <Question />
+        <PlayerSidebar  players={players}/>
+        <Question userId={userId} roomId={roomId} question={question}/>
       </div>
     </div>
   )
 }
 
 function Question(props) {
-  // props.question => string and props.answers => array of string answers
+  // props.question.name => string and props.question.answers => array of string answers
+
+  const submitAnswer = choice => {
+
+    console.log('answer: '+choice);
+    socket.emit("submitAnswer", {"roomId":props.roomId, "userId":props.userId, "answer":choice});
+  };
+
   return (
     <div className="col-10 text-center">
       <br /><br />
@@ -318,7 +535,7 @@ function Question(props) {
       <div className="row">
         <div className="col-8 offset-2">
           <div className="jumbotron">
-            <p className="lead" style={{fontSize: "25pt"}}>{props.question}</p>
+            <p className="lead" style={{fontSize: "25pt"}}>{props.question.question}</p>
           </div>
         </div>
       </div>
@@ -327,12 +544,8 @@ function Question(props) {
         <div className="col"></div>
         {
           // we want two answers in this column and the other two in the other column
-          props.answers.slice(0,2).map((answer, index) => {
-            return <div className="col-3 same-height" key = {index}>
-              <button className="btn btn-primary btn-lg answer w-100 h-100">
-                {answer}
-              </button>
-            </div>
+          props.question.answers.slice(0,2).map((answer, index) => {
+            return <AnswerButton key={index} answer={answer} submitAnswer={submitAnswer} row={0} col={index}/>
           })
         }
 
@@ -340,24 +553,35 @@ function Question(props) {
       </div>
 
       <br />
-        {
-          // we want two answers in this column and the other two in the other column
-          props.answers.slice(2).map((answer, index) => {
-            if(answer){
-              return <div className="row">
-                <div className="col"></div>
-                  <div className="col-3 same-height" key={index}>
-                    <button className="btn btn-primary btn-lg answer w-100 h-100">
-                      {answer}
-                    </button>
-                  </div>
-                <div className="col"></div>
-              </div>
+      <div className="row">
+        <div className="col"></div>
+            {
+              // we want two answers in this column and the other two in the other column
+              props.question.answers.slice(2).map((answer, index) => {
+                return <AnswerButton key={index} answer={answer} submitAnswer={submitAnswer} row={1} col={index}/>
+              })
             }
-          })
-        }
-    </div>
+          <div className="col"></div>
+      </div>
+   </div>
   )
+}
+
+
+function AnswerButton(props){
+
+  const map = [[0,1],[2,3]];
+  const handleClick = () => {
+    props.submitAnswer(map[props.row][props.col]);
+  }
+
+  return (
+    <div className="col-3 same-height">
+      <button className="btn btn-primary btn-lg answer w-100 h-100" onClick={ handleClick }>
+        {props.answer}
+      </button>
+    </div>
+    )
 }
 
 function VictoryQuestions(props) {
@@ -371,7 +595,7 @@ function VictoryQuestions(props) {
       {
         props.questions && props.questions.map((question, ind) => {
           if(question.answers.length === 2){
-            return (<div className="card question mb-3 w-75">
+            return (<div className="card question mb-3 w-75" key={ind}>
               <div className="card-body">
                 <h5 className="card-title mb-0">Question 1</h5>
                 <p className="card-text">{question.question}</p>
@@ -383,7 +607,7 @@ function VictoryQuestions(props) {
             </div>)
           }
           else{
-            return (<div className="card question mb-3 w-75">
+            return (<div className="card question mb-3 w-75" key={ind}>
               <div className="card-body">
                 <h5 className="card-title mb-0">Question 1</h5>
                 <p className="card-text">{question.question}</p>
@@ -403,13 +627,18 @@ function VictoryQuestions(props) {
 }
 
 
-function Victory() {
+function Victory({players, toLobby, victory}) {
+
+  const handleClick = () => {
+    toLobby();
+  }
+
   return (
   <div className="coontainer-fluid">
 
     <div className="row">
 
-      <PlayerSidebar/>
+      <PlayerSidebar players={players}/>
 
       <div className="col-10 text-center">
 
@@ -417,57 +646,14 @@ function Victory() {
 
         <div className="col-xs-12" style={{height: "20px"}}>
 
-          <div className="row">
-
-            <div className="row">
-
-              <div className="col align-self-end">
-                <div className="card player">
-                  <div className="col-xs-12" style={{height: "30px"}}></div>
-                  <h5 className="card-title mb-0">Abe Abbleton</h5>
-                  <p className="card-text">57 pts.</p>
-                </div>
-              </div>
-
-              <div className="col align-self-end">
-                <div className="card player">
-                  <div className="col-xs-12" style={{height: "100px"}}></div>
-                  <h5 className="card-title mb-0">Bob Bobbington</h5>
-                  <p className="card-text">89 pts.</p>
-                </div>
-              </div>
-
-              <div className="col align-self-end">
-                <div className="card player">
-                  <h5 className="card-title mb-0">Bubbles</h5>
-                  <p className="card-text">50 pts.</p>
-                </div>
-              </div>
-
-            </div>
-
-            <div className = "row">
-
-              <div className="col">
-                <h5>2</h5>
-              </div>
-
-              <div className="col">
-                <h5>1</h5>
-              </div>
-
-              <div className="col">
-                <h5>3</h5>
-              </div>                                         
-            </div>
-          </div>
-
+          <VictoryPodium podium={ victory.podium }/>
+          
           <br/>
 
-          <button type="submit" className="btn btn-dark text-nowrap w-75"onclick="location.href = '/lobby';">Return to Lobby</button>
+          <button type="submit" className="btn btn-dark text-nowrap w-75"onClick={ handleClick }>Return to Lobby</button>
           <div className="col-xs-12" style={{height: "20px"}}></div> 
 
-          <VictoryQuestions/>
+          <VictoryQuestions questions = {victory.questions}/>
 
         </div>
       </div>
@@ -475,4 +661,47 @@ function Victory() {
   </div>  
 )
 }
-export { Landing, Trivia, Lobby, PlayerSidebar, Victory, Question, GameStateHandler };
+
+function VictoryPodium({podium}){
+
+  console.log(podium);
+
+  return (
+    <div className="row">
+
+    <div className="row">
+      { podium.topPlayers && podium.topPlayers.map((player, ind) => {
+        return(
+          <div className="col align-self-end" key={ind}>
+          <div className="card player">
+            <div className="col-xs-12" style={{height: Math.round(player.score / podium.maxScore * 100)+"px"}}></div>
+            <h5 className="card-title mb-0">{player.name}</h5>
+            <p className="card-text">{player.score} pts.</p>
+          </div>
+        </div>
+        )})
+      }
+    </div>
+
+    <div className = "row">
+
+      <div className="col">
+        <h5>2</h5>
+      </div>
+
+      <div className="col">
+        <h5>1</h5>
+      </div>
+
+      <div className="col">
+        <h5>3</h5>
+      </div>                                         
+    </div>
+  </div>
+)
+
+}
+
+
+
+export { Landing, Trivia, Lobby, PlayerSidebar, Victory, Question, GameStateHandler, AnswerButton};
