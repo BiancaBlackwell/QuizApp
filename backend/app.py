@@ -187,7 +187,7 @@ def nextQuestion(roomid):
 
 	if(questionindex == maxquestions-1):
 		#this would be a greaaaaaaat place to put a emit that puts the user on the victory screen
-		print("ERROR: No more questions to serve")
+		emit('outOfQuestions',broadcast=True,roomid=roomid)
 		return
 
 	nextquestionid = questionlist[questionindex]
@@ -615,7 +615,7 @@ def getQuestionDetails(nextquestionid):
 	query = f'SELECT * FROM complete WHERE id = "{nextquestionid}"'
 	cur.execute(query)
 	row = cur.fetchone()
-	question = row[0]
+	question = row[1]
 	answers = []
 	for i in range(4):
 		newans = row[i+2]

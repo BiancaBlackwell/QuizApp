@@ -192,6 +192,16 @@ function GameStateHandler(props) {
       console.log("recieved");
     });
 
+<<<<<<< HEAD
+=======
+    socket.on("outOfQuestions", () =>{
+      console.log("End of Round! Displaying Victory Page");
+
+
+    });
+
+
+>>>>>>> 3914fb157e65ce1fde5dd260edd4447a16e4049f
     socket.emit("identify", {"roomId": roomId, "userId":userId});
 
 
