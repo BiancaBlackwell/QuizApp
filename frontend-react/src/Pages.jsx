@@ -236,6 +236,9 @@ ONLY WANTS TO TRIGGER SOMETIMES
 
 
   const toLobby = () => {
+    console.log('moving to lobby');
+    socket.emit("clearScores", {"roomId": roomId});
+
     setCurrentPage('lobby');
   }
 
@@ -481,13 +484,12 @@ function PlayerSidebar(props) {
       props.players && props.players.map((player, ind) => {
         // we want this component to be able to be used on both the lobby and game screen
         // so we should not expect it to always have a score
-        if(player.score){
+        if(player.score >= 0){
           return (
           <div className="player card mb-2" key = {ind} style={{backgroundColor: (player.isReady?"#2ec949":"#85c3cf") }}>
             <h5 className="card-title mb-0">{player.name}</h5>
             <p className="card-text">{player.score} pts.</p>
           </div>)
-
         } else {
           return (
           <div className="player card mb-2" key = {ind} style={{backgroundColor: (player.isReady?"#2ec949":"#85c3cf") }}>
@@ -523,7 +525,7 @@ function Question(props) {
   return (
     <div className="col-10 text-center">
       <br /><br />
-      <h1 className="display-3" style={{color: "#212121"}}><strong>Question 1</strong></h1>
+      <h1 className="display-3" style={{color: "#212121"}}><strong>Question {props.question.number}</strong></h1>
       <div className="row">
         <div className="col-8 offset-2">
           <div className="jumbotron">
@@ -589,7 +591,7 @@ function VictoryQuestions(props) {
           if(question.answers.length === 2){
             return (<div className="card question mb-3 w-75" key={ind}>
               <div className="card-body">
-                <h5 className="card-title mb-0">Question 1</h5>
+                <h5 className="card-title mb-0">Question {question.number}</h5>
                 <p className="card-text">{question.question}</p>
                 <div className="row">
                   <div className="col"> {(question.correct_answer === 0) ? <h6>{question.answers[0]}</h6> : <h6 className="text-muted">{question.answers[0]}</h6>} </div>
@@ -601,7 +603,7 @@ function VictoryQuestions(props) {
           else{
             return (<div className="card question mb-3 w-75" key={ind}>
               <div className="card-body">
-                <h5 className="card-title mb-0">Question 1</h5>
+                <h5 className="card-title mb-0">Question {question.number}</h5>
                 <p className="card-text">{question.question}</p>
                 <div className="row">
                   <div className="col"> {(question.correct_answer === 0) ? <h6>{question.answers[0]}</h6> : <h6 className="text-muted">{question.answers[0]}</h6>} </div>
