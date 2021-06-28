@@ -252,7 +252,11 @@ function GameStateHandler(props) {
       console.log("recieved");
     });
 
+    socket.on("outOfQuestions", () =>{
+      console.log("End of Round! Displaying Victory Page");
 
+
+    });
 
 
     socket.emit("identify", {"roomId": roomId, "userId":userId});
