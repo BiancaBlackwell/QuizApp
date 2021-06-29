@@ -190,6 +190,7 @@ def submitAnswer(data):
 	
 	#check the player's answer and update score if correct, and update the other player's sidebars
 	validateAnswerChoice(roomid,userid,answerChoice)
+	dbUpdateReady(userid, roomid, True)
 	emit('updatePlayers', getPlayers(roomid, True), broadcast=True, room=roomid)
 
 	#Set answered = true for userid
@@ -200,6 +201,8 @@ def submitAnswer(data):
 	questionstatus = checkAllPlayersAnswered(roomid)
 	if questionstatus == True:
 		#go to next question
+		dbResetReady(roomid)
+		emit('updatePlayers', getPlayers(roomid, True), broadcast=True, room=roomid)
 		nextQuestion(roomid)
 
 

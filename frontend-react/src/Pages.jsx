@@ -244,7 +244,6 @@ ONLY WANTS TO TRIGGER SOMETIMES
 
   return (
     <div>
-      <div>{roomId}</div>
       {currentPage === "lobby" && <Lobby userId = {userId} roomId = {roomId} messages={messages} players={players} amHost={amHost} canStart={canStart}/>}
       {currentPage === "trivia" && <Trivia userId = {userId} roomId = {roomId} players={players} question= { question }/>}
       {currentPage === "victory" && <Victory userId = {userId} roomId = {roomId} players={players} toLobby={toLobby} victoryStats={victoryStats}/>}
@@ -677,20 +676,36 @@ function VictoryPodium({podium}){
       }
     </div>
 
-    <div className = "row">
-
-      <div className="col">
-        <h5>2</h5>
+    {podium.topPlayers.length == 3 && 
+      <div className = "row">
+        <div className="col">
+          <h5>2</h5>
+        </div>
+        <div className="col">
+          <h5>1</h5>
+        </div>
+        <div className="col">
+          <h5>3</h5>
+        </div>
       </div>
-
-      <div className="col">
-        <h5>1</h5>
+    }
+    {podium.topPlayers.length == 2 && 
+      <div className = "row">
+        <div className="col">
+          <h5>1</h5>
+        </div>
+        <div className="col">
+          <h5>2</h5>
+        </div>
       </div>
-
-      <div className="col">
-        <h5>3</h5>
-      </div>                                         
-    </div>
+    }
+    {podium.topPlayers.length == 1 && 
+      <div className = "row">
+        <div className="col">
+          <h5>1</h5>
+        </div>
+      </div>
+    }
   </div>
 )
 
