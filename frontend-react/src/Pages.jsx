@@ -2,6 +2,7 @@ import "./Pages.css";
 import axios from "axios";
 import { Redirect, useParams } from "react-router-dom";
 import React, { useEffect, useState, useRef } from 'react';
+import {Tabs, Tab, ButtonGroup, Button, InputGroup, ButtonToolbar, DropdownButton, Dropdown, Row, Form, Col} from 'react-bootstrap'
 import socket from "./socket";
 
 const BACKEND_URL = "http://localhost:5000"
@@ -318,7 +319,7 @@ function Lobby({userid, roomid, messages, players, amHost, canStart}) {
         <div className="col-10">
           <br/>
           <h1 className="lobby-heading text-center text-middle">Main Lobby</h1>
-          <p className="uid text-center" id="uid">{userid} {amHost?"*****":""} </p>
+          <p className="uid text-center" id="uid">{amHost ? "★★★"+userid+"★★★" : userid} </p>
           <br/><br/><br/>
 
           <div className="row">
@@ -351,123 +352,166 @@ function Lobby({userid, roomid, messages, players, amHost, canStart}) {
 
             </div>
 
-            <div className="col-5" style={{marginLeft: "15px"}}>
+            < GameSettings />   
 
-              <div className="btn-group">
-                <div className="input-group-prepend">
-                  <span className="input-group-text h-100" style={{backgroundColor: "#85c3cf", border: "#25274d", color:"#212121"}}><b>Time per Question</b></span>
-                </div>
-                <button type="button" className="btn btn-dark">15s</button>
-                <button type="button" className="btn btn-dark">20s</button>
-                <button type="button" className="btn btn-dark">25s</button>
-                <button type="button" className="btn btn-dark">30s</button>
-                <button type="button" className="btn btn-dark">45s</button>
-                <button type="button" className="btn btn-dark">60s</button>
-                <button type="button" className="btn btn-dark" style={{fontSize: "20pt"}}>∞</button>
-              </div>
-
-              <div className="row mt-3">
-                <div className="col">
-                  <div className="form-check">
-                    <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Animals</label>
-                  </div>
-                  <div className="form-check">
-                    <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Brain Teasers</label>
-                  </div>
-                  <div className="form-check">
-                    <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Celebrities</label>
-                  </div>
-                  <div className="form-check">
-                    <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Entertainment</label>
-                  </div>
-                  <div className="form-check">
-                    <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" htmlFor="flexSwitchCheckDefault">For Kids</label>
-                  </div>
-                  <div className="form-check">
-                    <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" htmlFor="flexSwitchCheckChecked">General</label>
-                  </div>
-                  <div className="form-check">
-                    <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Geography</label>
-                  </div>
-                  <div className="form-check">
-                    <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" htmlFor="flexSwitchCheckChecked">History</label>
-                  </div>
-                  <div className="form-check">
-                    <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Hobbies</label>
-                  </div>
-                  <div className="form-check">
-                    <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Humanities</label>
-                  </div>
-                  <div className="form-check">
-                    <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Literature</label>
-                  </div>
-
-                </div>
-
-                <div className="col">
-                  <div className="form-check">
-                    <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Movies</label>
-                  </div>
-                  <div className="form-check">
-                    <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Music</label>
-                  </div>
-                  <div className="form-check">
-                    <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Newest</label>
-                  </div>
-                  <div className="form-check">
-                    <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" htmlFor="flexSwitchCheckDefault">People</label>
-                  </div>
-                  <div className="form-check">
-                    <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Rated</label>
-                  </div>
-                  <div className="form-check">
-                    <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Religion/Faith</label>
-                  </div>
-                  <div className="form-check">
-                    <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Science/Technology</label>
-                  </div>
-                  <div className="form-check">
-                    <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Sports</label>
-                  </div>
-                  <div className="form-check">
-                    <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Television</label>
-                  </div>
-                  <div className="form-check">
-                    <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Video Games</label>
-                  </div>
-                  <div className="form-check">
-                    <input className="form-check-input" type="checkbox" />
-                    <label className="form-check-label" htmlFor="flexSwitchCheckChecked">World</label>
-                  </div>
-                </div>
-
-              </div>
-            </div>
           </div>
         </div>
       </div>
     </div>
+  )
+}
+
+
+
+
+
+function GameSettings(props) {
+
+  return (
+    <div className="col-5" style={{marginLeft: "15px"}}>
+
+      <Tabs defaultActiveKey="profile" id="uncontrolled-tab-example">
+
+        <Tab eventKey="home" title="Quick Play" tabClassName="profile-tabitem">
+          <Row className="mt-1">
+            <Button variant="dark" className="mt-2">Classic</Button>
+            <Button variant="dark" className="mt-2">Speed Round</Button>
+            <Button variant="dark" className="mt-2">Endless</Button>
+          </Row>
+       </Tab>
+
+        <Tab eventKey="profile" title="Advanced" tabClassName="profile-tabitem">
+          <Row className="mt-2">
+            <Col>
+              <InputGroup className="justify-content-center">
+                <InputGroup.Prepend>
+                  <InputGroup.Text id="btnGroupAddon" style={{backgroundColor: "#85c3cf", border: "#25274d", color:"#212121"}}>Time per Question</InputGroup.Text>
+                </InputGroup.Prepend>
+                <DropdownButton as={ButtonGroup} title="10s" id="bg-nested-dropdown">
+                  <Dropdown.Item eventKey="1">10s</Dropdown.Item>
+                  <Dropdown.Item eventKey="2">30s</Dropdown.Item>
+                  <Dropdown.Item eventKey="3">60s</Dropdown.Item>
+                  <Dropdown.Item eventKey="4">∞</Dropdown.Item>
+                </DropdownButton>
+              </InputGroup>
+            </Col>
+            <Col>
+              <InputGroup className="justify-content-center">
+                <InputGroup.Prepend>
+                  <InputGroup.Text id="btnGroupAddon" style={{backgroundColor: "#85c3cf", border: "#25274d", color:"#212121"}}># of Questions</InputGroup.Text>
+                </InputGroup.Prepend>
+                <DropdownButton as={ButtonGroup} title="10" id="bg-nested-dropdown">
+                  <Dropdown.Item eventKey="1">10</Dropdown.Item>
+                  <Dropdown.Item eventKey="2">15</Dropdown.Item>
+                  <Dropdown.Item eventKey="3">20</Dropdown.Item>
+                  <Dropdown.Item eventKey="4">∞</Dropdown.Item>
+                </DropdownButton>
+              </InputGroup>
+            </Col>
+          </Row>
+          
+          <div className="row mt-3">
+            <div className="col">
+              <div className="form-check">
+                <input className="form-check-input" type="checkbox" />
+                <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Animals</label>
+              </div>
+              <div className="form-check">
+                <input className="form-check-input" type="checkbox" />
+                <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Brain Teasers</label>
+              </div>
+              <div className="form-check">
+                <input className="form-check-input" type="checkbox" />
+                <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Celebrities</label>
+              </div>
+              <div className="form-check">
+                <input className="form-check-input" type="checkbox" />
+                <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Entertainment</label>
+              </div>
+              <div className="form-check">
+                <input className="form-check-input" type="checkbox" />
+                <label className="form-check-label" htmlFor="flexSwitchCheckDefault">For Kids</label>
+              </div>
+              <div className="form-check">
+                <input className="form-check-input" type="checkbox" />
+                <label className="form-check-label" htmlFor="flexSwitchCheckChecked">General</label>
+              </div>
+              <div className="form-check">
+                <input className="form-check-input" type="checkbox" />
+                <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Geography</label>
+              </div>
+              <div className="form-check">
+                <input className="form-check-input" type="checkbox" />
+                <label className="form-check-label" htmlFor="flexSwitchCheckChecked">History</label>
+              </div>
+              <div className="form-check">
+                <input className="form-check-input" type="checkbox" />
+                <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Hobbies</label>
+              </div>
+              <div className="form-check">
+                <input className="form-check-input" type="checkbox" />
+                <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Humanities</label>
+              </div>
+              <div className="form-check">
+                <input className="form-check-input" type="checkbox" />
+                <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Literature</label>
+              </div>
+
+            </div>
+
+            <div className="col">
+              <div className="form-check">
+                <input className="form-check-input" type="checkbox" />
+                <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Movies</label>
+              </div>
+              <div className="form-check">
+                <input className="form-check-input" type="checkbox" />
+                <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Music</label>
+              </div>
+              <div className="form-check">
+                <input className="form-check-input" type="checkbox" />
+                <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Newest</label>
+              </div>
+              <div className="form-check">
+                <input className="form-check-input" type="checkbox" />
+                <label className="form-check-label" htmlFor="flexSwitchCheckDefault">People</label>
+              </div>
+              <div className="form-check">
+                <input className="form-check-input" type="checkbox" />
+                <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Rated</label>
+              </div>
+              <div className="form-check">
+                <input className="form-check-input" type="checkbox" />
+                <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Religion/Faith</label>
+              </div>
+              <div className="form-check">
+                <input className="form-check-input" type="checkbox" />
+                <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Science/Technology</label>
+              </div>
+              <div className="form-check">
+                <input className="form-check-input" type="checkbox" />
+                <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Sports</label>
+              </div>
+              <div className="form-check">
+                <input className="form-check-input" type="checkbox" />
+                <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Television</label>
+              </div>
+              <div className="form-check">
+                <input className="form-check-input" type="checkbox" />
+                <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Video Games</label>
+              </div>
+              <div className="form-check">
+                <input className="form-check-input" type="checkbox" />
+                <label className="form-check-label" htmlFor="flexSwitchCheckChecked">World</label>
+              </div>
+            </div>
+          </div>
+
+        </Tab>
+
+      </Tabs>
+    </div>
+
   )
 }
 
