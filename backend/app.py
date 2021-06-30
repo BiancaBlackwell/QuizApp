@@ -43,19 +43,20 @@ def test_disconnect():
 # JoinRoom function. Add socketid to the user in the Users table. Broadcast update to users.
 @socketio.on('identify')
 def identify(data):
-	roomid = data["roomId"]
-	userid = data["userId"]
+	print(data)
+	roomid = data["roomid"]
+	userid = data["userid"]
 	if not verifyUser(userid) or not verifyRoom(roomid):
 		return
-	print(f'Identifying User... Room ID: {data["roomId"]}')
+	print(f'Identifying User... Room ID: {roomid}')
 
 	socketid = request.sid
 	cur = get_db().cursor()
 
 	#Add the user to the socket's room and update the other players in that room
-	join_room(data["roomId"])
+	join_room(roomid)
 	dbSetSocketId(userid, socketid)
-	emit('message', {"message":'Player ' + getNicknameFromUserid(userid) + ' has joined!', "userId":'server'}, broadcast=True, room=roomid)
+	emit('message', {"message":'Player ' + getNicknameFromUserid(userid) + ' has joined!', "userid":'server'}, broadcast=True, room=roomid)
 	emit('updatePlayers', getPlayers(roomid), broadcast=True, room=roomid)
 
 	#set up host if this is a new room and one doesn't exist
@@ -68,7 +69,7 @@ def identify(data):
 		query2 = f'UPDATE rooms SET hostid = "{userid}" WHERE roomid = "{roomid}"'
 		cur.execute(query2)
 		#tell the players's there's a new host (just the creator since this is a new room)
-		emit('newHost', {"userId":userid}, broadcast=True, room=roomid)
+		emit('newHost', {"userid":userid}, broadcast=True, room=roomid)
 		#tell the host they can start the game (since the lobby just has one player, the host)
 		emit('yesStart', broadcast=True, room=roomid)
 	else:
@@ -79,23 +80,23 @@ def identify(data):
 # Chat function. Validate message sender, broadcast message to room.
 @socketio.on('sendMessage')
 def recvMessage(data):
-	roomid = data["roomId"]
+	roomid = data["roomid"]
+	userid = data["userid"]
 	message = data["message"]
-	userid = data["userId"]
 	if not verifyUser(userid) or not verifyRoom(roomid):
 		return
 	print(f'Recieved Message for room "{roomid}": {message} from {userid}')
 
 	#emit the message to every player in the room grabbing the sender's nickname from the database
-	emit('message', {"message":message, "userId":getNicknameFromUserid(userid)}, broadcast=True, room=roomid)
+	emit('message', {"message":message, "userid":getNicknameFromUserid(userid)}, broadcast=True, room=roomid)
 
 
 # UserStatistic function. Update nickname in Users table. Broadcast update to room.
 # Use first eight characters of userID for now
 @socketio.on('nameChange')
 def nameChange(data):
-	roomid = data["roomId"]
-	userid = data["userId"]
+	roomid = data["roomid"]
+	userid = data["userid"]
 	if not verifyUser(userid) or not verifyRoom(roomid):
 		return
 
@@ -106,8 +107,8 @@ def nameChange(data):
 # Set to default values
 @socketio.on('updateRoomSettings')
 def updateRoomSettings(data):
-	roomid = data["roomId"]
-	userid = data["userId"]
+	roomid = data["roomid"]
+	userid = data["userid"]
 
 	#Room Settings...
 	numquestions = data["numquestions"]
@@ -128,8 +129,8 @@ def updateRoomSettings(data):
 # ReadyButton function. Update counter in Rooms table, check room condition, broadcast update to room.
 @socketio.on('readyUser')
 def readyUser(data):
-	roomid = data["roomId"]
-	userid = data["userId"]
+	roomid = data["roomid"]
+	userid = data["userid"]
 	if not verifyUser(userid) or not verifyRoom(roomid):
 		return
 	print(f'Ready user {userid} in room {roomid}')
@@ -155,8 +156,8 @@ def readyUser(data):
 @socketio.on('unreadyUser')
 def unreadyUser(data):
 	#ReadyButton function. Update counter in Rooms table, broadcast update to room.
-	roomid = data["roomId"]
-	userid = data["userId"]
+	roomid = data["roomid"]
+	userid = data["userid"]
 	if not verifyUser(userid) or not verifyRoom(roomid):
 		return
 	print(f'Unready user {userid} in room {roomid}')
@@ -169,11 +170,11 @@ def unreadyUser(data):
 
 # UserGameState function. Update time recieved in list in Room table. Update answer submited in Rooms table. Check game condition (kill timer thread if met). 
 # Emit update to user who sent you data (right/wrong), Update Points, Broadcast update to room.
-# Frontend call: socket.emit("submitAnswer", {"roomId":props.roomId, "userId":props.userId, "answer":choice});
+# Frontend call: socket.emit("submitAnswer", {"roomid":props.roomid, "userid":props.userid, "answer":choice});
 @socketio.on('submitAnswer')
 def submitAnswer(data):
-	roomid = data["roomId"]
-	userid = data["userId"]
+	roomid = data["roomid"]
+	userid = data["userid"]
 	answerChoice = data["answer"]
 	if not verifyUser(userid) or not verifyRoom(roomid):
 		return
@@ -184,26 +185,32 @@ def submitAnswer(data):
 	query = f'SELECT answered FROM users WHERE userid = "{userid}"'
 	cur.execute(query)
 	status = cur.fetchone()[0]
-	if status == 1:
+	if status >= 1:
 		print(f"user {userid} has already answered this question!")
 		return
 	
 	#check the player's answer and update score if correct, and update the other player's sidebars
-	validateAnswerChoice(roomid,userid,answerChoice)
-	dbUpdateReady(userid, roomid, True)
+	query1 = f'UPDATE users SET answered = 1 WHERE userid = "{userid}"'
+	if validateAnswerChoice(roomid,userid,answerChoice):
+		#Set answered = true for userid
+		query1 = f'UPDATE users SET answered = 2 WHERE userid = "{userid}"'
+	cur.execute(query1)
+
+	# could move this to the end of the function and save on one emit per round but then the next question is displayed before the ready is cleared and that just looks sloppy
 	emit('updatePlayers', getPlayers(roomid, True), broadcast=True, room=roomid)
 
 	#Set answered = true for userid
-	query1 = f'UPDATE users SET answered = 1 WHERE userid = "{userid}"'
-	cur.execute(query1)
+	#query1 = f'UPDATE users SET answered = 1 WHERE userid = "{userid}"'
+	#cur.execute(query1)
 
 	#Check if all players have answered
 	questionstatus = checkAllPlayersAnswered(roomid)
 	if questionstatus == True:
 		#go to next question
-		dbResetReady(roomid)
+		#dbResetReady(roomid)
 		emit('updatePlayers', getPlayers(roomid, True), broadcast=True, room=roomid)
 		nextQuestion(roomid)
+
 
 
 """
@@ -231,18 +238,19 @@ def nextQuestion(roomid):
 		#this would be a greaaaaaaat place to put a emit that puts the user on the victory screen
 		
 		#move players to the victory page, giving them the needed stats
-		emit('outOfQuestions', {"podium":getVictoryStats(roomid), "questions":getVictoryQuestions(roomid)}, broadcast=True,roomid=roomid)
+		emit('outOfQuestions', {"podium":getVictoryStats(roomid), "questions":getVictoryQuestions(roomid)}, broadcast=True, room=roomid)
 
 		#reset DB for the next game
 		changeGameState(roomid)
 		resetAllPlayersAnswered(roomid)
+		emit('updatePlayers', getPlayers(roomid, True), broadcast=True, room=roomid)
 		resetQuestions(roomid)
 		resetScores(roomid)
+
 
 		#if the room only has the host, have them beable to start
 		if checkReady(roomid) >= 1:
 			emit('yesStart', broadcast=True, room=roomid)
-
 		return
 
 	#grab the next question and display
@@ -250,24 +258,25 @@ def nextQuestion(roomid):
 	mydict = getQuestionDetails(nextquestionid)
 	mydict["number"] = questionindex + 1
 	resetAllPlayersAnswered(roomid)
+	emit('updatePlayers', getPlayers(roomid, True), broadcast=True, room=roomid)
 	emit('displayNextQuestion',mydict, broadcast=True, room=roomid)
 
 
 # GameState function. Update.
 @socketio.on('clearScores')
 def clearScores(data):
-	roomid = data["roomId"]
+	roomid = data["roomid"]
 	if not verifyRoom(roomid):
 		return
-	emit('updatePlayers', getPlayers(roomid), room=request.sid)
+	emit('updatePlayers', getPlayers(roomid), broadcast=True, room=request.sid)
 
 
 
 # GameState function. Verify all questions have been served. Update scores in Room table, Broadcast update to room.
 @socketio.on('endGame')
 def endGame(data):
-	roomid = data["roomId"]
-	userid = data["userId"]
+	roomid = data["roomid"]
+	userid = data["userid"]
 	if not verifyUser(userid) or not verifyRoom(roomid):
 		return
 
@@ -277,8 +286,8 @@ def endGame(data):
 # GameState function. Toggle 'in game' in Room table. Emit update to user who sent you data. Check reset lobby condition. Reset ready status to 0
 @socketio.on('returnLobby')
 def returnLobby(data):
-	roomid = data["roomId"]
-	userid = data["userId"]
+	roomid = data["roomid"]
+	userid = data["userid"]
 	if not verifyUser(userid) or not verifyRoom(roomid):
 		return
 
@@ -288,8 +297,8 @@ def returnLobby(data):
 # Disconnect function. Toggle 'connected' in user table. Broadcast update to room.
 @socketio.on('disconnectUser')
 def disconnectUser(data):
-	roomid = data["roomId"]
-	userid = data["userId"]
+	roomid = data["roomid"]
+	userid = data["userid"]
 	if not verifyUser(userid) or not verifyRoom(roomid):
 		return
 	print(f'Disconnecting Player {userid} from room {roomid}')
@@ -303,7 +312,7 @@ def disconnectUser(data):
 		switch_host(roomid)
 
 	#update the lobby and remove the user from the DB along with any dependencies
-	emit('message', {"message":'Player ' + getNicknameFromUserid(userid) + ' has disconnected!', "userId":'server'}, broadcast=True, room=roomid)
+	emit('message', {"message":'Player ' + getNicknameFromUserid(userid) + ' has disconnected!', "userid":'server'}, broadcast=True, room=roomid)
 	removeUser(userid)
 	emit('updatePlayers', getPlayers(roomid), broadcast=True, room=roomid)
 
@@ -311,8 +320,8 @@ def disconnectUser(data):
 # Disconnect function. Toggle 'connected' in Room table. Broadcast update to room
 @socketio.on('reconnectUser')
 def reconnectUser(data):
-	roomid = data["roomId"]
-	userid = data["userId"]
+	roomid = data["roomid"]
+	userid = data["userid"]
 	if not verifyUser(userid) or not verifyRoom(roomid):
 		return
 
@@ -501,16 +510,25 @@ def verifySocketid(socketid):
 # Returns a list of player objects containing the name, and isReady status, and possiibly scores for use in displaying the player sidebar
 def getPlayers(roomid, scores=False):
 	cur = get_db().cursor()
-	query = f'SELECT nickname, isReady, score FROM users WHERE roomid = "{roomid}";'
+	query = f'SELECT nickname, isReady, score, answered FROM users WHERE roomid = "{roomid}";'
 	cur.execute(query)
 
 	#for each player in a room add them to the list with the requested info
 	players = []
 	for player in cur.fetchall():
+
+		print(f'({player[1]}, {player[3]})')
+
+		backgroundColor = "#85c3cf"
+		if player[3] == 1:
+			backgroundColor = "#eb4034"
+		elif player[1] == 1 or player [3] == 2:
+			backgroundColor = "#2ec949"
+
 		if scores:
-			players.append({"name":player[0],"isReady":player[1], "score":player[2]})
+			players.append({"name":player[0],"backgroundColor":backgroundColor, "score":player[2]})
 		else:
-			players.append({"name":player[0],"isReady":player[1]})
+			players.append({"name":player[0],"backgroundColor":backgroundColor})
 	cur.close()
 	return players
 
@@ -621,8 +639,8 @@ def switch_host(roomid):
 		cur.execute(query3)
 
 		#update the other players in the room
-		emit('newHost', {"userId":nextHost}, broadcast=True, room=roomid)
-		emit('message', {"message":'Player ' + getNicknameFromUserid(nextHost) + ' is now Host!', "userId":'server'}, broadcast=True, room=roomid)
+		emit('newHost', {"userid":nextHost}, broadcast=True, room=roomid)
+		emit('message', {"message":'Player ' + getNicknameFromUserid(nextHost) + ' is now Host!', "userid":'server'}, broadcast=True, room=roomid)
 	cur.close()
 
 		
@@ -726,10 +744,11 @@ def getQuestionDetails(nextquestionid):
 		answers.append(newans)
 		
 	mydict = {"question":question, "answers":answers}
-	#print(F"THESE ARE THE ANSWERSSSSSSSS: {answers}")
+	print(F"THESE ARE THE ANSWERSSSSSSSS: {answers}")
 	return mydict
 
 
+# Returns the numquestions setting for a given room 
 def getNumQuestions(roomid):
 	cur = get_db().cursor()
 	query = f'SELECT numquestions FROM rooms WHERE roomid = "{roomid}"'
@@ -747,9 +766,9 @@ def getFirstQuestion(roomid):
 	questionlist = cur.fetchone()[0]
 	cur.close()
 
-	#print(f"MY QUESTION STRING IS: {questionlist}")
+	print(f"MY QUESTION STRING IS: {questionlist}")
 	mylist = list(questionlist.split(" "))
-	#print(f"MY QUESTION LIST IS: {mylist}")
+	print(f"MY QUESTION LIST IS: {mylist}")
 	incrementQuestionIndex(roomid)
 	mydict = getQuestionDetails(mylist[0])
 	mydict["number"] = 1
@@ -804,12 +823,12 @@ def checkAllPlayersAnswered(roomid):
 	query = f'SELECT COUNT(userid) FROM users WHERE roomid = "{roomid}" AND connected = 1'
 	cur.execute(query)
 	countconnected = cur.fetchone()[0]
-	#print(f"THIS IS HOW MANY PEOPLE ARE CONNECTED {countconnected}")
-	query2 = f'SELECT COUNT(userid) FROM users WHERE roomid = "{roomid}" AND connected = 1 AND answered = 1'
+	print(f"THIS IS HOW MANY PEOPLE ARE CONNECTED {countconnected}")
+	query2 = f'SELECT COUNT(userid) FROM users WHERE roomid = "{roomid}" AND connected = 1 AND answered >= 1'
 	cur.execute(query2)
 	countanswered = cur.fetchone()[0]
 	cur.close()
-	#print(f"THIS IS HOW MANY PEOPLE HAVE ANSSWWWEEERRRED {countanswered}")
+	print(f"THIS IS HOW MANY PEOPLE HAVE ANSSWWWEEERRRED {countanswered}")
 	if(countconnected == countanswered):
 		return True
 	return False
@@ -826,6 +845,7 @@ def getQuestionList(roomid):
 	return questionlist
 
 
+# Returns the questionindex for a given roomid
 def getQuestionIndex(roomid):
 	cur = get_db().cursor()
 	query = f'SELECT questionindex FROM rooms WHERE roomid = "{roomid}"'
@@ -835,6 +855,7 @@ def getQuestionIndex(roomid):
 	return questionindex
 
 
+# Resets the answered status for all users in a given room
 def resetAllPlayersAnswered(roomid):
 	cur = get_db().cursor()
 	query = f'UPDATE users SET answered = 0 WHERE roomid = "{roomid}"'
@@ -842,19 +863,29 @@ def resetAllPlayersAnswered(roomid):
 	cur.close()
 
 
+# Returns the 3 players with the highest score in a given room
 def getVictoryStats(roomid):
 	players = getPlayers(roomid, True)
+	#sort by score
 	players = sorted(players, key = lambda name: name['score'])
+	#reverse
 	list.reverse(players)
+	#take top 3
 	players = players[0:3]
-	maxScore = players[0]["score"]
+	maxScore = max(players[0]["score"], 1)
+	for ind in range(len(players)):
+		players[ind]["height"] = round(players[ind]["score"] / maxScore * 125)
+		players[ind]["place"] = ind
+
+	#swap the first and second place players to correctly display on the podium
 	if len(players) == 3:
 		temp = players[1]
 		players[1] = players[0]
 		players[0] = temp
-	return {"maxScore":maxScore, "topPlayers":players}
+	return {"topPlayers":players}
 
 
+# Returns every question shown to a room for use on the final victory page
 def getVictoryQuestions(roomid):
 	victoryList = []
 	i = 1
@@ -866,6 +897,8 @@ def getVictoryQuestions(roomid):
 		i += 1
 	return victoryList
 
+
+# Returns a random questionid from the complete table of questions
 def getRandomQuestionId():
 	cur = get_db().cursor()
 	cur.execute('SELECT COUNT(id) FROM complete')

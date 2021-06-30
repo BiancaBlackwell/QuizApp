@@ -7,23 +7,26 @@ import socket from "./socket";
 const BACKEND_URL = "http://localhost:5000"
 
 
+
+
+
 function Landing() {
-  const [userRoomId, setUserRoomId] = useState({userId: undefined, roomId: undefined});
+
+  const [userRoomId, setUserRoomId] = useState({userid: undefined, roomid: undefined});
   const [redirectToLobby, setRedirectToLobby] = useState(false);
   const [buttonEnabled, setButtonEnabled] = useState(true);
-  const [joinButtonEnabled, setJoinButtonEnabled] = useState(true);
   const [lobbyCode, setlobbyCode] = useState("");
 
 
   // this effect gets run whenever userRoomId gets updated (because it's in the array we provide as an argument) -- in this case, after we get it from the backend in createAndJoinRoom
   useEffect(() => {
     // make sure they're both set
-    if(userRoomId.userId && userRoomId.roomId){
-      axios.get(`${BACKEND_URL}/backend/joinRoom/${userRoomId.userId}=${userRoomId.roomId}`).then((res) => {
+    if(userRoomId.userid && userRoomId.roomid){
+      axios.get(`${BACKEND_URL}/backend/joinRoom/${userRoomId.userid}=${userRoomId.roomid}`).then((res) => {
         // useEffect functions can't be async so we're using .then 
         setRedirectToLobby(true);
       }, (err) => {
-        alert("failed to join lobby, sorry!");
+        alert("Failed to join lobby, sorry!");
       });
     }
   }, [userRoomId])
@@ -47,7 +50,7 @@ function Landing() {
     console.log('Joining Room' + lobbyCode);
 
     // all we need to do here is set the state, the effect handles the join and redirect
-    setUserRoomId({roomId: lobbyCode, userId: createUserResponse.data});
+    setUserRoomId({roomid: lobbyCode, userid: createUserResponse.data});
   };
 
   async function createAndJoinRoom(){
@@ -57,9 +60,10 @@ function Landing() {
     let createUserResponse = await axios.get(`${BACKEND_URL}/backend/createUser`);
     console.log('Creating Room');
     let createRoomResponse = await axios.get(`${BACKEND_URL}/backend/createRoom`);
-    
+
+    console.log({roomid: createRoomResponse.data, userid: createUserResponse.data})
     // all we need to do here is set the state, the effect handles the join and redirect
-    setUserRoomId({roomId: createRoomResponse.data, userId: createUserResponse.data});
+    setUserRoomId({roomid: createRoomResponse.data, userid: createUserResponse.data});
   }
 
   return (
@@ -77,8 +81,8 @@ function Landing() {
               <button type="submit" enabled = {buttonEnabled.toString()} className="btn btn-dark text-nowrap form-control" style={{width: "auto"}} onClick={ joinRoom } >Join</button>
               
               {redirectToLobby && <Redirect to={{
-                pathname:`/game/${userRoomId.roomId}`, 
-                state: { userId: userRoomId.userId } // this is accessed with props.location.state.userId in the lobby component. fine to pass as a prop b/c it won't change
+                pathname:`/game/${userRoomId.roomid}`, 
+                state: { roomid: userRoomId.roomid, userid: userRoomId.userid } // this is accessed with props.location.state.userid in the lobby component. fine to pass as a prop b/c it won't change
                 }} 
               />}
 
@@ -91,8 +95,8 @@ function Landing() {
           <button type="submit" enabled = {buttonEnabled.toString()} className="btn btn-dark text-nowrap" onClick={ createAndJoinRoom }>Create</button>
 
           {redirectToLobby && <Redirect to={{
-              pathname:`/game/${userRoomId.roomId}`, 
-              state: { userId: userRoomId.userId } // this is accessed with props.location.state.userId in the lobby component. fine to pass as a prop b/c it won't change
+              pathname:`/game/${userRoomId.roomid}`, 
+              state: { roomid: userRoomId.roomid, userid: userRoomId.userid } // this is accessed with props.location.state.userid in the lobby component. fine to pass as a prop b/c it won't change
             }} 
           />}
 
@@ -102,13 +106,15 @@ function Landing() {
     )
 }
 
+
+
+
+
 function GameStateHandler(props) {
 
   // NOTE: this component is where we'll do all the fancy webhook stuff
   // and pass the results to the children
 
-  // this gets the url roomId
-  const { roomId } = useParams();
   // track what part of the game UI we want to display
   // this should be either lobby, game, or victory
   const [currentPage, setCurrentPage] = useState("lobby");
@@ -119,24 +125,34 @@ function GameStateHandler(props) {
   const [question, setQuestion] = useState({});
   const [victoryStats, setVictoryStats] = useState([]);
 
-  // since anyone can click this link we cannot rely on the userId prop being filled here
-  const [userId, setUserId] = useState(() => {
+  const [roomid, setRoomId] = useState(() => {
     // function args to useState are run once to get the intial value
     if(props.location.state){
-      // this will be the userId that gets passed from the redirect of the Lobby component
-      return props.location.state.userId;
+      // this will be the userid that gets passed from the redirect of the Lobby component
+      return props.location.state.roomid;
     } else{
       return undefined;
     }
   });
 
-  // handle creating the userId if the person came here by clicking the link
+  // since anyone can click this link we cannot rely on the userid prop being filled here
+  const [userid, setUserId] = useState(() => {
+    // function args to useState are run once to get the intial value
+    if(props.location.state){
+      // this will be the userid that gets passed from the redirect of the Lobby component
+      return props.location.state.userid;
+    } else{
+      return undefined;
+    }
+  });
+
+  // handle creating the userid if the person came here by clicking the link
   useEffect(() => {
 
-    if(userId === undefined){
+    if(userid === undefined){
       axios.get(`${BACKEND_URL}/backend/createUser`).then((createUserResponse) => {
         if (createUserResponse.status !== 200) {
-          alert("Wasn't able to create your userId, sorry!");
+          alert("Wasn't able to create your userid, sorry!");
           return;
         }
 
@@ -144,69 +160,58 @@ function GameStateHandler(props) {
       });
     }
 
-    //socket = io.connect(`${SOCKET_URL}`);
-
     socket.on("message", msg => {
-      console.log('Recieved message: [' + msg.message + '] from ' + msg.userId);
+      console.log('Recieved message: [' + msg.message + '] from ' + msg.userid);
       let allMessages = messages;
       allMessages.push(msg);
       setMessages([...allMessages]);
     });
 
     socket.on("updatePlayers", players => {
-      console.log('Updating Players');
-      console.log(players);
-
+      console.log('Updating Players', players);
       setPlayers(players);
     });
 
     socket.on("yesStart", () => {
       console.log("Host can now start the game!");
       setCanStart(true);
-      //socket.emit("startGame", {"roomId":roomId, "userId":userId});
     });
+
     socket.on("noStart", () => {
       console.log("Not enough players ready to start the game!");
       setCanStart(false);
-      //socket.emit("startGame", {"roomId":roomId, "userId":userId});
     });
 
-    socket.on("newHost", host => {
-      console.log("New Host is " + host.userId);
-      if(userId === host.userId)
+    socket.on("newHost", newHost => {
+      console.log("New Host is " + newHost.userid);
+      if(userid === newHost.userid)
         setAmHost(true);
     });
 
     socket.on("trivia", firstquestion => {
-      console.log("********************TRIVIA********************");
+      console.log("Everyone is ready! Now starting the Trivia!", firstquestion);
       setQuestion(firstquestion);
       setCurrentPage("trivia");
     });
 
-    socket.on("displayNextQuestion", mydict =>{
-      console.log("Displaying the Next Question");
-      //console.log(mydict);
-      setQuestion(mydict);
+    socket.on("displayNextQuestion", nextquestion =>{
+      console.log("Displaying the Next Question", nextquestion);
+      setQuestion(nextquestion);
     });
 
     socket.on("outOfQuestions", victoryStats =>{
-      console.log("End of Round! Displaying Victory Page!");
-      //console.log(victory);
+      console.log("End of Round! Displaying Victory Page!", victoryStats);
       setVictoryStats(victoryStats);
       setCurrentPage("victory");
 
     });
 
-    socket.emit("identify", {"roomId": roomId, "userId":userId});
-
-
+    socket.emit("identify", {"roomid": roomid, "userid":userid});
 
     // passing an empty array to useEffect makes it run once when the component is mounted
   }, []);
 
-
   /*
-
 ******************************
 ATTEMPTED DISSCONNECT STUFF
 *******************************
@@ -215,11 +220,15 @@ ONLY WANTS TO TRIGGER SOMETIMES
 
   // this also doesn't work
   const onDisconnect = (e) => {
+
+    //=======always triggers if used
     e.preventDefault();
     e.returnValue = ""
+    //=======
+
     console.log("Disconnecting User");
-    //socket.emit("disconnectUser", {"roomId":roomId, "userId":userId});
-    socket.emit("sendMessage", {"roomId":roomId, 'message':'hey', "userId":userId});
+    socket.emit("sendMessage", {'message':'Did it work??', "userid":userid, "roomid":roomid});
+    //socket.emit("disconnectUser", {"roomid":roomid, "userid":userid});
     //socket.removeAllListeners();
     //socket.disconnect();
   }
@@ -234,31 +243,40 @@ ONLY WANTS TO TRIGGER SOMETIMES
   }, [onDisconnect]);
 */
 
-
   const toLobby = () => {
-    console.log('moving to lobby');
-    socket.emit("clearScores", {"roomId": roomId});
-
+    console.log('Going back to Lobby!');
+    socket.emit("clearScores", {"roomid": roomid});
     setCurrentPage('lobby');
-  }
+  };
 
   return (
     <div>
-      {currentPage === "lobby" && <Lobby userId = {userId} roomId = {roomId} messages={messages} players={players} amHost={amHost} canStart={canStart}/>}
-      {currentPage === "trivia" && <Trivia userId = {userId} roomId = {roomId} players={players} question= { question }/>}
-      {currentPage === "victory" && <Victory userId = {userId} roomId = {roomId} players={players} toLobby={toLobby} victoryStats={victoryStats}/>}
+      {currentPage === "lobby" && <Lobby  roomid = {roomid} userid = {userid} messages={messages} players={players} amHost={amHost} canStart={canStart}/>}
+      {currentPage === "trivia" && <Trivia roomid = {roomid} userid = {userid} players={players} question= { question }/>}
+      {currentPage === "victory" && <Victory roomid = {roomid} userid = {userid} players={players} toLobby={toLobby} victoryStats={victoryStats}/>}
     </div>
   )
 }
 
 
 
+
+
 // can use destructuring here to be more explict abt what we pass as props
-function Lobby({userId, roomId, messages, players, amHost, canStart}) {
+function Lobby({userid, roomid, messages, players, amHost, canStart}) {
 
   const [message, setMessage] = useState("");
   const [ready, setReady] = useState(false);
   const [colors, setColor] = useState({"backgroundColor":"#464866"});
+  const messagesEndRef = useRef(null)
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages]);
 
   // On Change
   const onChange = e => {
@@ -270,8 +288,8 @@ function Lobby({userId, roomId, messages, players, amHost, canStart}) {
     if (message === "") {
       return;
     }
-    console.log('Sending message: [' + message + '] to room ' + roomId);
-    socket.emit("sendMessage", {"roomId":roomId, "message":message, "userId":userId});
+    console.log('Sending message: [' + message + '] to room ' + roomid);
+    socket.emit("sendMessage", {"roomid":roomid, "userid":userid, "message":message});
     setMessage("");
   };
 
@@ -279,7 +297,7 @@ function Lobby({userId, roomId, messages, players, amHost, canStart}) {
     if(!amHost || (amHost && canStart)){
       let toggle = !ready;
       console.log('Toggling ready state to: ' + toggle);
-      socket.emit(toggle?"readyUser":"unreadyUser", {"roomId":roomId, "message":message, "userId":userId});
+      socket.emit(toggle?"readyUser":"unreadyUser", {"roomid":roomid, "userid":userid, "message":message});
       setColor(toggle?{"backgroundColor":"#25274d"}:{"backgroundColor":"#464866"});
       setReady(toggle);
     }
@@ -289,51 +307,35 @@ function Lobby({userId, roomId, messages, players, amHost, canStart}) {
     if (event.key === 'Enter') {
       onClick();
     }
-  }
+  };
 
   return (
-
     <div className="coontainer-fluid">
       <div className="row">
+
         <PlayerSidebar players={players}/>
 
         <div className="col-10">
-
           <br/>
           <h1 className="lobby-heading text-center text-middle">Main Lobby</h1>
-          <p className="uid text-center" id="uid">{userId} {amHost?"*****":""} </p>
-
+          <p className="uid text-center" id="uid">{userid} {amHost?"*****":""} </p>
           <br/><br/><br/>
 
-
-          
           <div className="row">
-  
             <div className="col-6">
-
               <div className="row message_holder" style={{textAlign: "left"}}>
                 <div>
                   { messages.length === 0 && <h3 className="message_placeholder">No message yet..</h3> }
 
                   {messages.length > 0 && messages.map( (msg, ind) => {
-                    if(msg.userId === "server"){
                       return (
                         <div key={ind}>
-                          <b>{msg.message}</b>
-                      </div>
-                      )
-                    }
-                    else{
-                      return (
-                        <div key={ind}>
-                          {msg.userId}: {msg.message}
+                          {msg.userid === "server"?<div><b>{msg.message}</b></div>:<div>{msg.userid}: {msg.message}</div>}
                         </div>
                       )
-                     
-                    }
-                  
-                  })
-                }
+                    })
+                  }
+                  <div ref={messagesEndRef} />
                 </div>
               </div>
 
@@ -348,9 +350,6 @@ function Lobby({userId, roomId, messages, players, amHost, canStart}) {
               </div>
 
             </div>
-
-
-
 
             <div className="col-5" style={{marginLeft: "15px"}}>
 
@@ -472,6 +471,10 @@ function Lobby({userId, roomId, messages, players, amHost, canStart}) {
   )
 }
 
+
+
+
+
 function PlayerSidebar(props) {
   // let's have props.players be a array of objects, each with a name and optionally a score
 
@@ -479,19 +482,18 @@ function PlayerSidebar(props) {
     <br />
 
     <h3 style={{ color: "#e8f9fc" }}>Players</h3>
-    {
-      props.players && props.players.map((player, ind) => {
+    { props.players && props.players.map((player, ind) => {
         // we want this component to be able to be used on both the lobby and game screen
         // so we should not expect it to always have a score
         if(player.score >= 0){
           return (
-          <div className="player card mb-2" key = {ind} style={{backgroundColor: (player.isReady?"#2ec949":"#85c3cf") }}>
+          <div className="player card mb-2" key = {ind} style={{backgroundColor: player.backgroundColor }}>
             <h5 className="card-title mb-0">{player.name}</h5>
             <p className="card-text">{player.score} pts.</p>
           </div>)
         } else {
           return (
-          <div className="player card mb-2" key = {ind} style={{backgroundColor: (player.isReady?"#2ec949":"#85c3cf") }}>
+          <div className="player card mb-2" key = {ind} style={{backgroundColor: player.backgroundColor }}>
             <h5 className="card-title mb-0">{player.name}</h5>
           </div>)
         }
@@ -500,82 +502,93 @@ function PlayerSidebar(props) {
   </div>;
 }
 
-function Trivia({userId, roomId, players, question}) {
 
+
+
+
+function Trivia({userid, roomid, players, question}) {
   return (
     <div className="coontainer-fluid">
       <div className="row">
         <PlayerSidebar  players={players}/>
-        <Question userId={userId} roomId={roomId} question={question}/>
+        <Question userid={userid} roomid={roomid} question={question}/>
       </div>
     </div>
   )
 }
 
+
+
+
+
 function Question(props) {
   // props.question.name => string and props.question.answers => array of string answers
 
   const submitAnswer = choice => {
-
-    console.log('answer: '+choice);
-    socket.emit("submitAnswer", {"roomId":props.roomId, "userId":props.userId, "answer":choice});
+    console.log('Submitting Answer: '+choice);
+    socket.emit("submitAnswer", {"roomid":props.roomid, "userid":props.userid, "answer":choice});
   };
 
   return (
     <div className="col-10 text-center">
       <br /><br />
-      <h1 className="display-3" style={{color: "#212121"}}><strong>Question {props.question.number}</strong></h1>
+      <h1 className="display-3" style={{color: "#212121"}}><strong>Question { props.question.number }</strong></h1>
       <div className="row">
         <div className="col-8 offset-2">
           <div className="jumbotron">
-            <p className="lead" style={{fontSize: "25pt"}}>{props.question.question}</p>
+            <p className="lead" style={{fontSize: "25pt"}}> { props.question.question } </p>
           </div>
         </div>
       </div>
       <br />
+
       <div className="row">
         <div className="col"></div>
-        {
-          // we want two answers in this column and the other two in the other column
-          props.question.answers.slice(0,2).map((answer, index) => {
-            return <AnswerButton key={index} answer={answer} submitAnswer={submitAnswer} row={0} col={index}/>
-          })
-        }
-
+          { // we want two answers in this column and the other two in the other column
+            props.question.answers.slice(0,2).map((answer, index) => {
+              return <AnswerButton key={index} answer={answer} submitAnswer={submitAnswer} row={0} col={index}/>
+            })
+          }
         <div className="col"></div>
       </div>
-
       <br />
       <div className="row">
         <div className="col"></div>
-            {
-              // we want two answers in this column and the other two in the other column
-              props.question.answers.slice(2).map((answer, index) => {
-                return <AnswerButton key={index} answer={answer} submitAnswer={submitAnswer} row={1} col={index}/>
-              })
-            }
-          <div className="col"></div>
+          { // we want two answers in this column and the other two in the other column
+            props.question.answers.slice(2).map((answer, index) => {
+              return <AnswerButton key={index} answer={answer} submitAnswer={submitAnswer} row={1} col={index}/>
+            })
+          }
+        <div className="col"></div>
       </div>
+
    </div>
   )
 }
+
+
+
 
 
 function AnswerButton(props){
 
   const map = [[0,1],[2,3]];
   const handleClick = () => {
-    props.submitAnswer(map[props.row][props.col]);
+    props.submitAnswer( map[props.row][props.col] );
   }
 
   return (
     <div className="col-3 same-height">
       <button className="btn btn-primary btn-lg answer w-100 h-100" onClick={ handleClick }>
-        {props.answer}
+        { props.answer }
       </button>
     </div>
-    )
+  )
 }
+
+
+
+
 
 function VictoryQuestions(props) {
   // const questions = [{ question: 'underwear?', correct_answer: 0, answers:["yes", "no"]}, { question: 'underwear?', correct_answer: 3, answers:["yes", "no", "hell no", "hell yeah"]}];
@@ -584,40 +597,31 @@ function VictoryQuestions(props) {
   return (          
     <div className="row d-flex justify-content-center">
       <h2 className="display-3" style={{color: "#212121"}}>Questions</h2>   
-
       {
         props.questions && props.questions.map((question, ind) => {
-          if(question.answers.length === 2){
-            return (<div className="card question mb-3 w-75" key={ind}>
+          return (
+            <div className="card question mb-3 w-75" key={ind}>
               <div className="card-body">
                 <h5 className="card-title mb-0">Question {question.number}</h5>
                 <p className="card-text">{question.question}</p>
                 <div className="row">
-                  <div className="col"> {(question.correct_answer === 0) ? <h6>{question.answers[0]}</h6> : <h6 className="text-muted">{question.answers[0]}</h6>} </div>
-                  <div className="col"> {(question.correct_answer === 1) ? <h6>{question.answers[1]}</h6> : <h6 className="text-muted">{question.answers[1]}</h6>} </div>
+                  {
+                    question.answers && question.answers.map((answer, ind) => {
+                      return ( <div className="col" key={ind}> {(question.correct_answer === ind) ? <h6>{answer}</h6> : <h6 className="text-muted">{answer}</h6>} </div> )
+                    })
+                  }
                 </div>
               </div>
-            </div>)
-          }
-          else{
-            return (<div className="card question mb-3 w-75" key={ind}>
-              <div className="card-body">
-                <h5 className="card-title mb-0">Question {question.number}</h5>
-                <p className="card-text">{question.question}</p>
-                <div className="row">
-                  <div className="col"> {(question.correct_answer === 0) ? <h6>{question.answers[0]}</h6> : <h6 className="text-muted">{question.answers[0]}</h6>} </div>
-                  <div className="col"> {(question.correct_answer === 1) ? <h6>{question.answers[1]}</h6> : <h6 className="text-muted">{question.answers[1]}</h6>} </div>
-                  <div className="col"> {(question.correct_answer === 2) ? <h6>{question.answers[2]}</h6> : <h6 className="text-muted">{question.answers[2]}</h6>} </div>
-                  <div className="col"> {(question.correct_answer === 3) ? <h6>{question.answers[3]}</h6> : <h6 className="text-muted">{question.answers[3]}</h6>} </div>
-                </div>
-              </div>
-            </div>)
-          }
+            </div>
+          )
         })
       }
     </div>
   )
 }
+
+
+
 
 
 function Victory({players, toLobby, victoryStats}) {
@@ -627,90 +631,60 @@ function Victory({players, toLobby, victoryStats}) {
   }
 
   return (
-  <div className="coontainer-fluid">
+    <div className="coontainer-fluid">
+      <div className="row">
 
-    <div className="row">
+        <PlayerSidebar players={players}/>
 
-      <PlayerSidebar players={players}/>
+        <div className="col-10 text-center"><br/>
+          <h1 className="display-3" style={{color: "#212121"}}><strong>Final Scores</strong></h1>
+          <div className="col-xs-12" style={{height: "20px"}}><br/>
 
-      <div className="col-10 text-center">
+            <VictoryPodium podium={ victoryStats.podium }/>
+            
+            <br/>
+            <button type="submit" className="btn btn-dark text-nowrap w-75"onClick={ handleClick }>Return to Lobby</button>
+            <div className="col-xs-12" style={{height: "20px"}}></div> 
 
-        <h1 className="display-3" style={{color: "#212121"}}><strong>Final Scores</strong></h1>
+            <VictoryQuestions questions = {victoryStats.questions}/>
 
-        <div className="col-xs-12" style={{height: "20px"}}>
-
-          <VictoryPodium podium={ victoryStats.podium }/>
-          
-          <br/>
-
-          <button type="submit" className="btn btn-dark text-nowrap w-75"onClick={ handleClick }>Return to Lobby</button>
-          <div className="col-xs-12" style={{height: "20px"}}></div> 
-
-          <VictoryQuestions questions = {victoryStats.questions}/>
-
-        </div>
-      </div>
-    </div>  
-  </div>  
-)
-}
-
-function VictoryPodium({podium}){
-
-  console.log(podium);
-
-  return (
-    <div className="row">
-
-    <div className="row">
-      { podium.topPlayers && podium.topPlayers.map((player, ind) => {
-        return(
-          <div className="col align-self-end" key={ind}>
-          <div className="card player">
-            <div className="col-xs-12" style={{height: Math.round(player.score / podium.maxScore * 100)+"px"}}></div>
-            <h5 className="card-title mb-0">{player.name}</h5>
-            <p className="card-text">{player.score} pts.</p>
           </div>
         </div>
-        )})
-      }
-    </div>
-
-    {podium.topPlayers.length == 3 && 
-      <div className = "row">
-        <div className="col">
-          <h5>2</h5>
-        </div>
-        <div className="col">
-          <h5>1</h5>
-        </div>
-        <div className="col">
-          <h5>3</h5>
-        </div>
-      </div>
-    }
-    {podium.topPlayers.length == 2 && 
-      <div className = "row">
-        <div className="col">
-          <h5>1</h5>
-        </div>
-        <div className="col">
-          <h5>2</h5>
-        </div>
-      </div>
-    }
-    {podium.topPlayers.length == 1 && 
-      <div className = "row">
-        <div className="col">
-          <h5>1</h5>
-        </div>
-      </div>
-    }
-  </div>
-)
-
+      </div>  
+    </div>  
+  )
 }
 
+
+
+
+
+function VictoryPodium({podium}){
+  return (
+    <div className="row">
+      <div className="row">
+        { podium.topPlayers && podium.topPlayers.map((player, ind) => {
+          return(
+            <div div className={podium.topPlayers.length === 1?"row align-self-end":"col align-self-end"} key={ind}>
+              {podium.topPlayers.length === 1 && <div className="col"></div>}
+              <div className="col">
+                <div className="card player">
+                  <div className="col-xs-12" style={{ height: player.height+"px" }}></div>
+                  <h5 className="card-title mb-0">{player.name}</h5>
+                  <p className="card-text">{player.score} pts.</p>
+                </div>
+                <div className="col">
+                  <h5>{ind+1}</h5>
+                </div>
+              </div>
+              {podium.topPlayers.length === 1 && <div className="col"></div>}
+            </div>
+          )})
+        }
+      </div>
+    </div>
+  )
+}
 
 
 export { Landing, Trivia, Lobby, PlayerSidebar, Victory, Question, GameStateHandler, AnswerButton};
