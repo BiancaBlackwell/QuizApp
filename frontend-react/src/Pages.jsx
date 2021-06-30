@@ -367,6 +367,26 @@ function Lobby({userid, roomid, messages, players, amHost, canStart}) {
 
 function GameSettings(props) {
 
+  const [curTime, setCurTime] = useState("10s");
+  const [curNumQuestions, setCurNumQuestions] = useState("15");
+
+
+  const selectGamemode = choice => {
+    console.log('Submitting Gamemode: '+ choice);
+  };
+
+  const tmap = ["15s", "30s", "60s", "∞"];
+  const handleTime=(e)=>{
+    console.log('Changing Time Control to: ' + tmap[e]);
+    setCurTime(tmap[e]);
+  }
+
+  const qmap = ["10", "15", "20", "∞"];
+  const handleQuestions=(e)=>{
+    console.log('Changing the Number of Questions to: ' + qmap[e]);
+    setCurNumQuestions(qmap[e]);
+  }
+
   return (
     <div className="col-5" style={{marginLeft: "15px"}}>
 
@@ -374,9 +394,9 @@ function GameSettings(props) {
 
         <Tab eventKey="home" title="Quick Play" tabClassName="profile-tabitem">
           <Row className="mt-1">
-            <Button variant="dark" className="mt-2">Classic</Button>
-            <Button variant="dark" className="mt-2">Speed Round</Button>
-            <Button variant="dark" className="mt-2">Endless</Button>
+            <GamemodeButton text="Classic" code={0} onClick={ selectGamemode }/>
+            <GamemodeButton text="Speed Round" code={1} onClick={ selectGamemode }/>
+            <GamemodeButton text="Endless" code={2} onClick={ selectGamemode }/>
           </Row>
        </Tab>
 
@@ -387,11 +407,11 @@ function GameSettings(props) {
                 <InputGroup.Prepend>
                   <InputGroup.Text id="btnGroupAddon" style={{backgroundColor: "#85c3cf", border: "#25274d", color:"#212121"}}>Time per Question</InputGroup.Text>
                 </InputGroup.Prepend>
-                <DropdownButton as={ButtonGroup} title="10s" id="bg-nested-dropdown">
-                  <Dropdown.Item eventKey="1">10s</Dropdown.Item>
-                  <Dropdown.Item eventKey="2">30s</Dropdown.Item>
-                  <Dropdown.Item eventKey="3">60s</Dropdown.Item>
-                  <Dropdown.Item eventKey="4">∞</Dropdown.Item>
+                <DropdownButton as={ButtonGroup} title={ curTime } id="bg-nested-dropdown" onSelect={ handleTime }>
+                  <Dropdown.Item eventKey="0">15s</Dropdown.Item>
+                  <Dropdown.Item eventKey="1">30s</Dropdown.Item>
+                  <Dropdown.Item eventKey="2">60s</Dropdown.Item>
+                  <Dropdown.Item eventKey="3">∞</Dropdown.Item>
                 </DropdownButton>
               </InputGroup>
             </Col>
@@ -400,11 +420,11 @@ function GameSettings(props) {
                 <InputGroup.Prepend>
                   <InputGroup.Text id="btnGroupAddon" style={{backgroundColor: "#85c3cf", border: "#25274d", color:"#212121"}}># of Questions</InputGroup.Text>
                 </InputGroup.Prepend>
-                <DropdownButton as={ButtonGroup} title="10" id="bg-nested-dropdown">
-                  <Dropdown.Item eventKey="1">10</Dropdown.Item>
-                  <Dropdown.Item eventKey="2">15</Dropdown.Item>
-                  <Dropdown.Item eventKey="3">20</Dropdown.Item>
-                  <Dropdown.Item eventKey="4">∞</Dropdown.Item>
+                <DropdownButton as={ButtonGroup} title={ curNumQuestions } id="bg-nested-dropdown" onSelect={ handleQuestions }>
+                  <Dropdown.Item eventKey="0">10</Dropdown.Item>
+                  <Dropdown.Item eventKey="1">15</Dropdown.Item>
+                  <Dropdown.Item eventKey="2">20</Dropdown.Item>
+                  <Dropdown.Item eventKey="3">∞</Dropdown.Item>
                 </DropdownButton>
               </InputGroup>
             </Col>
@@ -515,6 +535,20 @@ function GameSettings(props) {
   )
 }
 
+
+
+
+
+function GamemodeButton(props){
+
+  const handleClick = () => {
+    props.onClick( props.code );
+  }
+
+  return (
+    <Button variant="dark" className="mt-2" onClick={ handleClick }>{props.text}</Button>
+  )
+}
 
 
 
