@@ -651,13 +651,14 @@ function Question(props) {
 function AnswerButton(props){
 
   const map = [[0,1],[2,3]];
-  const handleClick = () => {
+  const handleClick = (e) => {
+    e.currentTarget.blur();
     props.submitAnswer( map[props.row][props.col] );
   }
 
   return (
     <div className="col-3 same-height">
-      <button className="btn btn-primary btn-lg answer w-100 h-100" onClick={ handleClick }>
+      <button className="btn btn-primary btn-lg answer w-100 h-100" onClick={(e) => handleClick(e) }> 
         { props.answer }
       </button>
     </div>

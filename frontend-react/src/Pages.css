@@ -74,14 +74,25 @@ body{
     color:#e8f9fc;
     height: 100%;
     padding: 5%;
-}    
+}
 .btn-primary:hover{
     background-color: #464866;
     border-color: #25274d;
     color:#e8f9fc;
     height: 100%;
     padding: 5%;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset, 0 0 8px #25274d;
 }
+.btn-primary:focus{
+    background-color: #25274d;
+    border-color: #25274d;
+    color:#e8f9fc;
+    height: 100%;
+    padding: 5%;
+    outline: none;
+    outline-offset: none;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset, 0 0 8px #25274d;
+}  
 .answer{
     font-size: 15pt;
     vertical-align: middle;
