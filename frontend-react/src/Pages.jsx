@@ -125,6 +125,7 @@ function GameStateHandler(props) {
   const [canStart, setCanStart] = useState(false);
   const [question, setQuestion] = useState({});
   const [victoryStats, setVictoryStats] = useState([]);
+  const [settings, setSettings] = useState([]);
 
   const [roomid, setRoomId] = useState(() => {
     // function args to useState are run once to get the intial value
@@ -161,6 +162,7 @@ function GameStateHandler(props) {
       });
     }
 
+    //-------------------------------------LOBBY HOOKS-------------------------------------
     socket.on("message", msg => {
       console.log('Recieved message: [' + msg.message + '] from ' + msg.userid);
       let allMessages = messages;
@@ -208,9 +210,10 @@ function GameStateHandler(props) {
     });
 
     socket.emit("identify", {"roomid": roomid, "userid":userid});
-
     // passing an empty array to useEffect makes it run once when the component is mounted
-  }, []);
+    }, []);
+
+    
 
   /*
 ******************************
