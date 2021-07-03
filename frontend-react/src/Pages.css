@@ -135,3 +135,27 @@ body{
 .nav-tabs {
     border-bottom: 1px solid #85c3cf;
 }
+.catBody{
+    background-color: #85c3cf;
+}
+.catHead{
+    font-size: 16px;
+    line-height: 0.77;
+    color: #e8f9fc;
+    background-color: #25274D;
+    border-color: #25274D;
+    align-content: center;
+}
+.catCard{
+    background-color: transparent;
+}
+.form-check {
+    display: flex; 
+    align-items: center;
+}
+.form-check-label{
+    margin-left: 10px;
+}
+.btn.dropdown-toggle{
+    padding: 5px;
+}

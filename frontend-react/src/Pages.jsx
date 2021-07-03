@@ -2,7 +2,7 @@ import "./Pages.css";
 import axios from "axios";
 import { Redirect, useParams } from "react-router-dom";
 import React, { useEffect, useState, useRef } from 'react';
-import {Tabs, Tab, ButtonGroup, Button, InputGroup, ButtonToolbar, DropdownButton, Dropdown, Row, Form, Col} from 'react-bootstrap'
+import {Tabs, Tab, ButtonGroup, Button, InputGroup, ButtonToolbar, DropdownButton, Dropdown, Row, Form, Col, FormControl, Accordion, Card} from 'react-bootstrap'
 import socket from "./socket";
 
 const BACKEND_URL = "http://localhost:5000"
@@ -125,7 +125,7 @@ function GameStateHandler(props) {
   const [canStart, setCanStart] = useState(false);
   const [question, setQuestion] = useState({});
   const [victoryStats, setVictoryStats] = useState([]);
-  const [settings, setSettings] = useState([]);
+  const [gameSettings, setGameSettings] = useState([]);
 
   const [roomid, setRoomId] = useState(() => {
     // function args to useState are run once to get the intial value
@@ -206,16 +206,20 @@ function GameStateHandler(props) {
       console.log("End of Round! Displaying Victory Page!", victoryStats);
       setVictoryStats(victoryStats);
       setCurrentPage("victory");
-
     });
+
+    socket.on("updateSettings", gameSettings => {
+      console.log("Updating the settings!", gameSettings);
+      setGameSettings(gameSettings);
+    });
+
 
     socket.emit("identify", {"roomid": roomid, "userid":userid});
     // passing an empty array to useEffect makes it run once when the component is mounted
     }, []);
 
     
-
-  /*
+/*
 ******************************
 ATTEMPTED DISSCONNECT STUFF
 *******************************
@@ -255,7 +259,7 @@ ONLY WANTS TO TRIGGER SOMETIMES
 
   return (
     <div>
-      {currentPage === "lobby" && <Lobby  roomid = {roomid} userid = {userid} messages={messages} players={players} amHost={amHost} canStart={canStart}/>}
+      {currentPage === "lobby" && <Lobby  roomid = {roomid} userid = {userid} messages={messages} players={players} gameSettings={gameSettings} amHost={amHost} canStart={canStart} />}
       {currentPage === "trivia" && <Trivia roomid = {roomid} userid = {userid} players={players} question= { question }/>}
       {currentPage === "victory" && <Victory roomid = {roomid} userid = {userid} players={players} toLobby={toLobby} victoryStats={victoryStats}/>}
     </div>
@@ -267,7 +271,7 @@ ONLY WANTS TO TRIGGER SOMETIMES
 
 
 // can use destructuring here to be more explict abt what we pass as props
-function Lobby({userid, roomid, messages, players, amHost, canStart}) {
+function Lobby({userid, roomid, messages, players, gameSettings, amHost, canStart}) {
 
   const [message, setMessage] = useState("");
   const [ready, setReady] = useState(false);
@@ -355,7 +359,7 @@ function Lobby({userid, roomid, messages, players, amHost, canStart}) {
 
             </div>
 
-            < GameSettings />   
+            < GameSettings gameSettings={ gameSettings }/>   
 
           </div>
         </div>
@@ -368,7 +372,7 @@ function Lobby({userid, roomid, messages, players, amHost, canStart}) {
 
 
 
-function GameSettings(props) {
+function GameSettings({gameSettings}) {
 
   const [curTime, setCurTime] = useState("10s");
   const [curNumQuestions, setCurNumQuestions] = useState("15");
@@ -390,10 +394,12 @@ function GameSettings(props) {
     setCurNumQuestions(qmap[e]);
   }
 
-  return (
-    <div className="col-5" style={{marginLeft: "15px"}}>
 
-      <Tabs defaultActiveKey="profile" id="uncontrolled-tab-example">
+  const catagories = [{name: "Arts and Lit.", catagories:[]}, {name: "Arts and Lit.", catagories:[]}, {name: "Arts and Lit.", catagories:[]}, {name: "Arts and Lit.", catagories:[]}];
+
+  return (
+    <Col md={5}>
+      <Tabs defaultActiveKey="profile" id="uncontrolled-tab-example" className="tabs">
 
         <Tab eventKey="home" title="Quick Play" tabClassName="profile-tabitem">
           <Row className="mt-1">
@@ -404,8 +410,8 @@ function GameSettings(props) {
        </Tab>
 
         <Tab eventKey="profile" title="Advanced" tabClassName="profile-tabitem">
-          <Row className="mt-2">
-            <Col>
+          <Row >
+            <Col className="mt-3">
               <InputGroup className="justify-content-center">
                 <InputGroup.Prepend>
                   <InputGroup.Text id="btnGroupAddon" style={{backgroundColor: "#85c3cf", border: "#25274d", color:"#212121"}}>Time per Question</InputGroup.Text>
@@ -418,7 +424,7 @@ function GameSettings(props) {
                 </DropdownButton>
               </InputGroup>
             </Col>
-            <Col>
+            <Col className="mt-3">
               <InputGroup className="justify-content-center">
                 <InputGroup.Prepend>
                   <InputGroup.Text id="btnGroupAddon" style={{backgroundColor: "#85c3cf", border: "#25274d", color:"#212121"}}># of Questions</InputGroup.Text>
@@ -433,108 +439,112 @@ function GameSettings(props) {
             </Col>
           </Row>
           
-          <div className="row mt-3">
-            <div className="col">
-              <div className="form-check">
-                <input className="form-check-input" type="checkbox" />
-                <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Animals</label>
-              </div>
-              <div className="form-check">
-                <input className="form-check-input" type="checkbox" />
-                <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Brain Teasers</label>
-              </div>
-              <div className="form-check">
-                <input className="form-check-input" type="checkbox" />
-                <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Celebrities</label>
-              </div>
-              <div className="form-check">
-                <input className="form-check-input" type="checkbox" />
-                <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Entertainment</label>
-              </div>
-              <div className="form-check">
-                <input className="form-check-input" type="checkbox" />
-                <label className="form-check-label" htmlFor="flexSwitchCheckDefault">For Kids</label>
-              </div>
-              <div className="form-check">
-                <input className="form-check-input" type="checkbox" />
-                <label className="form-check-label" htmlFor="flexSwitchCheckChecked">General</label>
-              </div>
-              <div className="form-check">
-                <input className="form-check-input" type="checkbox" />
-                <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Geography</label>
-              </div>
-              <div className="form-check">
-                <input className="form-check-input" type="checkbox" />
-                <label className="form-check-label" htmlFor="flexSwitchCheckChecked">History</label>
-              </div>
-              <div className="form-check">
-                <input className="form-check-input" type="checkbox" />
-                <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Hobbies</label>
-              </div>
-              <div className="form-check">
-                <input className="form-check-input" type="checkbox" />
-                <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Humanities</label>
-              </div>
-              <div className="form-check">
-                <input className="form-check-input" type="checkbox" />
-                <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Literature</label>
-              </div>
+          <Row className="mt-3">
 
-            </div>
+            <Col>
+            <Accordion defaultActiveKey="0">
 
-            <div className="col">
-              <div className="form-check">
-                <input className="form-check-input" type="checkbox" />
-                <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Movies</label>
-              </div>
-              <div className="form-check">
-                <input className="form-check-input" type="checkbox" />
-                <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Music</label>
-              </div>
-              <div className="form-check">
-                <input className="form-check-input" type="checkbox" />
-                <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Newest</label>
-              </div>
-              <div className="form-check">
-                <input className="form-check-input" type="checkbox" />
-                <label className="form-check-label" htmlFor="flexSwitchCheckDefault">People</label>
-              </div>
-              <div className="form-check">
-                <input className="form-check-input" type="checkbox" />
-                <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Rated</label>
-              </div>
-              <div className="form-check">
-                <input className="form-check-input" type="checkbox" />
-                <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Religion/Faith</label>
-              </div>
-              <div className="form-check">
-                <input className="form-check-input" type="checkbox" />
-                <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Science/Technology</label>
-              </div>
-              <div className="form-check">
-                <input className="form-check-input" type="checkbox" />
-                <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Sports</label>
-              </div>
-              <div className="form-check">
-                <input className="form-check-input" type="checkbox" />
-                <label className="form-check-label" htmlFor="flexSwitchCheckChecked">Television</label>
-              </div>
-              <div className="form-check">
-                <input className="form-check-input" type="checkbox" />
-                <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Video Games</label>
-              </div>
-              <div className="form-check">
-                <input className="form-check-input" type="checkbox" />
-                <label className="form-check-label" htmlFor="flexSwitchCheckChecked">World</label>
-              </div>
-            </div>
-          </div>
+              <Card className="catCard">
+                <Accordion.Toggle as={Card.Header} eventKey="0" className="catHead">
+                  <Form.Check type="checkbox" label="Arts and Lit." />
+                </Accordion.Toggle>
+                <Accordion.Collapse eventKey="0">
+                  <Card.Body className="catBody">
+                  <Form.Group controlId="formBasicCheckbox">
+                    <Form.Check type="checkbox" label="History" />
+                    <Form.Check type="checkbox" label="Humanities" />
+                    <Form.Check type="checkbox" label="Literature" />
+                    <Form.Check type="checkbox" label="Religion/Faith" />
+                  </Form.Group>
+                  </Card.Body>
+                </Accordion.Collapse>
+              </Card>
 
+              <Card className="catCard">
+                <Accordion.Toggle as={Card.Header} eventKey="1" className="catHead">
+                  <Form.Check type="checkbox" label="Sports and Leisure"/>
+                </Accordion.Toggle>
+                <Accordion.Collapse eventKey="1">
+                  <Card.Body className="catBody">
+                    <Form.Group controlId="formBasicCheckbox">
+                      <Form.Check type="checkbox" label="Hobbies" />
+                      <Form.Check type="checkbox" label="Sports" />
+                      <Form.Check type="checkbox" label="Science and Technology" />
+                     <Form.Check type="checkbox" label="Video Games" />
+                    </Form.Group>
+                  </Card.Body>
+                </Accordion.Collapse>
+              </Card>
+
+              <Card className="catCard">
+                <Accordion.Toggle as={Card.Header} eventKey="2" className="catHead">
+                  <Form.Check type="checkbox" label="Pop Culture"/>
+                </Accordion.Toggle>
+                <Accordion.Collapse eventKey="2">
+                  <Card.Body className="catBody">
+                    <Form.Group controlId="formBasicCheckbox">
+                      <Form.Check type="checkbox" label="Celebrities" />
+                      <Form.Check type="checkbox" label="Entertainment" />
+                      <Form.Check type="checkbox" label="People" />
+                    </Form.Group>
+                  </Card.Body>
+                </Accordion.Collapse>
+              </Card>
+
+              <Card className="catCard">
+                <Accordion.Toggle as={Card.Header} eventKey="3" className="catHead">
+                  <Form.Check type="checkbox" label="Media"/>
+                </Accordion.Toggle>
+                <Accordion.Collapse eventKey="3">
+                  <Card.Body className="catBody">
+                    <Form.Group controlId="formBasicCheckbox">
+                      <Form.Check type="checkbox" label="Movies" />
+                      <Form.Check type="checkbox" label="Music" />
+                      <Form.Check type="checkbox" label="Television" />
+                    </Form.Group>
+                  </Card.Body>
+                </Accordion.Collapse>
+              </Card>
+
+              <Card className="catCard">
+                <Accordion.Toggle as={Card.Header} eventKey="4" className="catHead">
+                  <Form.Check type="checkbox" label="Culture"/>
+                </Accordion.Toggle>
+                <Accordion.Collapse eventKey="4">
+                  <Card.Body className="catBody">
+                    <Form.Group controlId="formBasicCheckbox">
+                      <Form.Check type="checkbox" label="Animals" />
+                      <Form.Check type="checkbox" label="Geography" />
+                      <Form.Check type="checkbox" label="World" />
+                    </Form.Group>
+                  </Card.Body>
+                </Accordion.Collapse>
+              </Card>
+            
+              <Card className="catCard">
+                <Accordion.Toggle as={Card.Header} eventKey="5" className="catHead">
+                  <Form.Check type="checkbox" label="Misc"/>
+                </Accordion.Toggle>
+                <Accordion.Collapse eventKey="5">
+                  <Card.Body className="catBody">
+                    <Form.Group controlId="formBasicCheckbox">
+                      <Form.Check type="checkbox" label="Brain Teasers" />
+                      <Form.Check type="checkbox" label="For Kids" />
+                      <Form.Check type="checkbox" label="General" />
+                      <Form.Check type="checkbox" label="Newest" />
+                      <Form.Check type="checkbox" label="Rated" />
+                   </Form.Group>
+                  </Card.Body>
+                </Accordion.Collapse>
+              </Card>
+
+            </Accordion>
+            </Col>
+
+          </Row>
         </Tab>
-
       </Tabs>
-    </div>
-
+    </Col>
   )
 }
 
