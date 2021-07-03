@@ -9,19 +9,19 @@ from werkzeug.datastructures import auth_property
 
 """How to use: flask run"""
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="build", static_url_path="/")
 app.config['SECRET_KEY'] = 'mysecret'
 app.debug = False
-app.host = 'localhost'
-
+app.host = 'http://quizzically.app'
 CORS(app)
 DATABASE = 'trivia.db'
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 
-@app.route('/')
+@app.route("/")
 def index():
-	return render_template('lobby.html')
+    return app.send_static_file("index.html")
+
 
 
 # To Do: Add try-catches for any access to data

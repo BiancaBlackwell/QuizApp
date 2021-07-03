@@ -243,7 +243,6 @@ ONLY WANTS TO TRIGGER SOMETIMES
     }
   }, [onDisconnect]);
 */
-
   const toLobby = () => {
     console.log('Going back to Lobby!');
     socket.emit("clearScores", {"roomid": roomid});
