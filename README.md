@@ -22,7 +22,7 @@ QuizApp is a Trivia WebApp. It is highly responsive, as all client-to-client int
   ```bash
   npm install axios
   npm install CORS
-  npm install socket.io -client@2.3.0 --save (IMPORTANT: DO THIS EXACTLY!)
+  npm install socket.io-client@2.3.0 --save (IMPORTANT: DO THIS EXACTLY!)
   ```
 4) Initialize node_modules folder in ~/frontend-react
   ```bash
