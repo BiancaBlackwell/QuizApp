@@ -1,16 +1,23 @@
 runtime: python38
 
-env_variables:
-  none_of: "your_business"
 
 handlers:
 # frontend
-- url: /static
-  static_dir: build/static
-- url: /(.*\.(json|ico|js|html))$
-  static_files: build/\1
-  upload: build/.*\.(json|ico|js|html)$
+- url: /
+  static_dir: build/
+- url: /
+  static_files: build/index.html
+  upload: build/index.html
+
 
 # backend
 - url: /.*
   script: auto
+
+  
+entrypoint: python app.py
+
+env: flex
+
+network:
+  session_affinity: true
