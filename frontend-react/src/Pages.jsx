@@ -395,7 +395,8 @@ function GameSettings({gameSettings}) {
   }
 
 
-  const catagories = [{name: "Arts and Lit.", catagories:[]}, {name: "Arts and Lit.", catagories:[]}, {name: "Arts and Lit.", catagories:[]}, {name: "Arts and Lit.", catagories:[]}];
+  const gamemodes = ["Classic", "Speed Round", "Endless"];
+  const catagories = [{name: "Arts and Literature", catagories:["History", "Humanities", "Literature", "Religion and Faith"]}, {name: "Sports and Leisure", catagories:["Hobbies", "Sports", "Science and Technology"]}, {name: "Pop Culture", catagories:["Celebrities", "Entertainment", "People"]}, {name: "Media", catagories:["Movies", "Music", "Television"]}, {name: "Culture", catagories:["Animals", "Geography", "World"]}, {name: "Misc.", catagories:["Brain Teasers", "Newest", "For Kids", "General", "Rated"]}];
 
   return (
     <Col md={5}>
@@ -403,9 +404,12 @@ function GameSettings({gameSettings}) {
 
         <Tab eventKey="home" title="Quick Play" tabClassName="profile-tabitem">
           <Row className="mt-1">
-            <GamemodeButton text="Classic" code={0} onClick={ selectGamemode }/>
-            <GamemodeButton text="Speed Round" code={1} onClick={ selectGamemode }/>
-            <GamemodeButton text="Endless" code={2} onClick={ selectGamemode }/>
+            { gamemodes && gamemodes.map((gamemode, ind) =>{
+                return (
+                  <GamemodeButton text={gamemode} code={ind} onClick={ selectGamemode }/>
+                )
+              })
+            }
           </Row>
        </Tab>
 
@@ -440,111 +444,48 @@ function GameSettings({gameSettings}) {
           </Row>
           
           <Row className="mt-3">
-
             <Col>
-            <Accordion defaultActiveKey="0">
-
-              <Card className="catCard">
-                <Accordion.Toggle as={Card.Header} eventKey="0" className="catHead">
-                  <Form.Check type="checkbox" label="Arts and Lit." />
-                </Accordion.Toggle>
-                <Accordion.Collapse eventKey="0">
-                  <Card.Body className="catBody">
-                  <Form.Group controlId="formBasicCheckbox">
-                    <Form.Check type="checkbox" label="History" />
-                    <Form.Check type="checkbox" label="Humanities" />
-                    <Form.Check type="checkbox" label="Literature" />
-                    <Form.Check type="checkbox" label="Religion/Faith" />
-                  </Form.Group>
-                  </Card.Body>
-                </Accordion.Collapse>
-              </Card>
-
-              <Card className="catCard">
-                <Accordion.Toggle as={Card.Header} eventKey="1" className="catHead">
-                  <Form.Check type="checkbox" label="Sports and Leisure"/>
-                </Accordion.Toggle>
-                <Accordion.Collapse eventKey="1">
-                  <Card.Body className="catBody">
-                    <Form.Group controlId="formBasicCheckbox">
-                      <Form.Check type="checkbox" label="Hobbies" />
-                      <Form.Check type="checkbox" label="Sports" />
-                      <Form.Check type="checkbox" label="Science and Technology" />
-                     <Form.Check type="checkbox" label="Video Games" />
-                    </Form.Group>
-                  </Card.Body>
-                </Accordion.Collapse>
-              </Card>
-
-              <Card className="catCard">
-                <Accordion.Toggle as={Card.Header} eventKey="2" className="catHead">
-                  <Form.Check type="checkbox" label="Pop Culture"/>
-                </Accordion.Toggle>
-                <Accordion.Collapse eventKey="2">
-                  <Card.Body className="catBody">
-                    <Form.Group controlId="formBasicCheckbox">
-                      <Form.Check type="checkbox" label="Celebrities" />
-                      <Form.Check type="checkbox" label="Entertainment" />
-                      <Form.Check type="checkbox" label="People" />
-                    </Form.Group>
-                  </Card.Body>
-                </Accordion.Collapse>
-              </Card>
-
-              <Card className="catCard">
-                <Accordion.Toggle as={Card.Header} eventKey="3" className="catHead">
-                  <Form.Check type="checkbox" label="Media"/>
-                </Accordion.Toggle>
-                <Accordion.Collapse eventKey="3">
-                  <Card.Body className="catBody">
-                    <Form.Group controlId="formBasicCheckbox">
-                      <Form.Check type="checkbox" label="Movies" />
-                      <Form.Check type="checkbox" label="Music" />
-                      <Form.Check type="checkbox" label="Television" />
-                    </Form.Group>
-                  </Card.Body>
-                </Accordion.Collapse>
-              </Card>
-
-              <Card className="catCard">
-                <Accordion.Toggle as={Card.Header} eventKey="4" className="catHead">
-                  <Form.Check type="checkbox" label="Culture"/>
-                </Accordion.Toggle>
-                <Accordion.Collapse eventKey="4">
-                  <Card.Body className="catBody">
-                    <Form.Group controlId="formBasicCheckbox">
-                      <Form.Check type="checkbox" label="Animals" />
-                      <Form.Check type="checkbox" label="Geography" />
-                      <Form.Check type="checkbox" label="World" />
-                    </Form.Group>
-                  </Card.Body>
-                </Accordion.Collapse>
-              </Card>
-            
-              <Card className="catCard">
-                <Accordion.Toggle as={Card.Header} eventKey="5" className="catHead">
-                  <Form.Check type="checkbox" label="Misc"/>
-                </Accordion.Toggle>
-                <Accordion.Collapse eventKey="5">
-                  <Card.Body className="catBody">
-                    <Form.Group controlId="formBasicCheckbox">
-                      <Form.Check type="checkbox" label="Brain Teasers" />
-                      <Form.Check type="checkbox" label="For Kids" />
-                      <Form.Check type="checkbox" label="General" />
-                      <Form.Check type="checkbox" label="Newest" />
-                      <Form.Check type="checkbox" label="Rated" />
-                   </Form.Group>
-                  </Card.Body>
-                </Accordion.Collapse>
-              </Card>
-
-            </Accordion>
+              <Accordion defaultActiveKey="0">
+                { catagories && catagories.map((catagory, ind) => {
+                    return (
+                      <CatagoryCards group={catagory} index={ind} key={ind}/>
+                    )
+                  })
+                }
+              </Accordion>
             </Col>
 
           </Row>
         </Tab>
       </Tabs>
     </Col>
+  )
+}
+
+
+
+
+
+function CatagoryCards({group, index}){
+
+  return (
+  <Card className="catCard">
+    <Accordion.Toggle as={Card.Header} eventKey={index+1} className="catHead">
+      <Form.Check type="checkbox" label={group.name}/>
+    </Accordion.Toggle>
+    <Accordion.Collapse eventKey={index+1}>
+      <Card.Body className="catBody">
+        <Form.Group controlId="formBasicCheckbox">
+          { group.catagories && group.catagories.map((catagory, ind) => {
+              return (
+                <Form.Check type="checkbox" label={catagory} key={ind}/>
+              )
+            })
+          }
+       </Form.Group>
+      </Card.Body>
+    </Accordion.Collapse>
+  </Card>
   )
 }
 
