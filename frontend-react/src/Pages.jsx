@@ -5,7 +5,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import {Tabs, Tab, ButtonGroup, Button, InputGroup, ButtonToolbar, DropdownButton, Dropdown, Row, Form, Col} from 'react-bootstrap'
 import socket from "./socket";
 
-const BACKEND_URL = "http://localhost:5000"
+const BACKEND_URL = "http://quizzically.app:5000"
 
 
 

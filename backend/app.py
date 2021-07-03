@@ -376,6 +376,7 @@ def createUser():
 #Add user to room or generate room
 @app.route('/backend/joinRoom/<userid>=<roomid>')
 def joinRoom(userid, roomid):
+	print("userid: {userid} and roomid {roomid}")
 	if not verifyUser(userid) or not verifyRoom(roomid):
 		abort(500)
 
