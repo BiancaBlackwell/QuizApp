@@ -22,8 +22,6 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 def index():
     return app.send_static_file("index.html")
 
-
-
 # To Do: Add try-catches for any access to data
 # Handler for message recieved on 'connect' channel. Called after user has gotten id and roomid (successfully joined room)
 # JoinRoom function. Establish Socket Connection.
