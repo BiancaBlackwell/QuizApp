@@ -3,21 +3,19 @@ runtime: python38
 
 handlers:
 # frontend
-- url: /
-  static_dir: build/
-- url: /
-  static_files: build/index.html
-  upload: build/index.html
+- url: /static
+  static_dir: build/static
+- url: /(.*\.(json|ico|js|html))$
+  static_files: build/\1
+  upload: build/.*\.(json|ico|js|html)$
 
 
 # backend
 - url: /.*
   script: auto
 
-  
-entrypoint: python app.py
 
-env: flex
+entrypoint: gunicorn -b:5000 app:app
 
 network:
   session_affinity: true
