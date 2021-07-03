@@ -12,7 +12,7 @@ from werkzeug.datastructures import auth_property
 app = Flask(__name__, static_folder="build", static_url_path="/")
 app.config['SECRET_KEY'] = 'mysecret'
 app.debug = False
-app.host = 'http://quizzically.app'
+app.host = 'https://quizzically.app/'
 CORS(app)
 DATABASE = 'trivia.db'
 socketio = SocketIO(app, cors_allowed_origins="*")
@@ -907,4 +907,4 @@ def getRandomQuestionId():
 	return random.randint(1, size-1)
 
 if __name__ == '__main__':
-	socketio.run(app)	
+	socketio.run(app, host="https://quizzically.app/")	
