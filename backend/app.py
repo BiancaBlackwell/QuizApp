@@ -1,4 +1,4 @@
-from flask import Flask, abort, render_template, request
+from flask import Flask, abort, render_template, request, send_from_directory
 import sqlite3
 import random
 import uuid
@@ -9,7 +9,7 @@ from werkzeug.datastructures import auth_property
 
 """How to use: flask run"""
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="build", static_url_path="/")
 app.config['SECRET_KEY'] = 'mysecret'
 app.debug = False
 app.host = 'localhost'
@@ -21,7 +21,8 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 
 @app.route('/')
 def index():
-	return render_template('lobby.html')
+	print('INDEX')
+	return app.send_static_file('index.html')
 
 
 # To Do: Add try-catches for any access to data
