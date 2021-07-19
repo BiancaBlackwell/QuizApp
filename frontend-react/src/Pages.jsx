@@ -5,8 +5,11 @@ import React, { useEffect, useState, useRef } from 'react';
 import {Tabs, Tab, ButtonGroup, Button, InputGroup, ButtonToolbar, DropdownButton, Dropdown, Row, Form, Col} from 'react-bootstrap'
 import socket from "./socket";
 
-const BACKEND_URL = "http://localhost:5000"
+//const BACKEND_URL = "https://quizzicalquizapp.herokuapp.com:5000"
 
+const PORT = process.env.PORT || 5000;
+//const BACKEND_URL = "http://localhost:"+PORT;
+const BACKEND_URL = "https://quizzicalquizapp.herokuapp.com:"+PORT;
 
 
 
